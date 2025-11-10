@@ -35,6 +35,7 @@ import { queryDictList } from "@/api/dict";
 import { resolveStatusState } from "@/utils/status";
 import { formatDateTime } from "@/utils/date";
 import { pad } from "@/utils/format";
+import { toArray } from "@/utils/array";
 
 const loading = ref(true);
 const formData = ref<Record<string, any>>({});
@@ -281,20 +282,6 @@ function mapDictItems(list: any[]) {
 		}
 		return acc;
 	}, {} as Record<string, string>);
-}
-
-function toArray(source: any): any[] {
-	if (!source) return [];
-	if (Array.isArray(source)) return source;
-	if (typeof source === "string") {
-		try {
-			const parsed = JSON.parse(source);
-			return Array.isArray(parsed) ? parsed : [];
-		} catch (error) {
-			return [];
-		}
-	}
-	return [];
 }
 
 function createLine(label: string, value: any) {

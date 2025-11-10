@@ -99,6 +99,7 @@ import { resolveStatusState } from "@/utils/status";
 import { ensurePicturePreviewUrl } from "@/utils/picture";
 import { formatDateTime } from "@/utils/date";
 import { pad } from "@/utils/format";
+import { toArray } from "@/utils/array";
 
 const pageTitle = ref("填写保养记录");
 const submitButtonText = ref("提交保养记录");
@@ -378,11 +379,6 @@ function refreshStatusName() {
 	if (!code) return;
 	const label = statusDict.value[code];
 	if (label) form.value.statusName = label;
-}
-
-function toArray<T>(input: T | T[] | null | undefined): T[] {
-	if (!input) return [];
-	return Array.isArray(input) ? input : [input];
 }
 
 function normalizePictureList(raw: any): Array<{ id: string; src: string }> {

@@ -60,6 +60,7 @@ import { ensurePicturePreviewUrl } from "@/utils/picture";
 import { getPartsManagementlist, selectPlanOrder } from "@/api/order";
 import { formatDateTime } from "@/utils/date";
 import { pad } from "@/utils/format";
+import { toArray } from "@/utils/array";
 const sparePartVisible = ref<boolean>(false);
 type BeforeCloseHandler = (
 	type: "confirm" | "cancel" | "close",
@@ -380,11 +381,6 @@ async function loadRepairRecords(id: string) {
 	} finally {
 		recordsLoading.value = false;
 	}
-}
-
-function toArray(input: any): any[] {
-	if (!input) return [];
-	return Array.isArray(input) ? input : [input];
 }
 
 function resolveRepairLines(record: any) {

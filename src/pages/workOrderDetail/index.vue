@@ -75,10 +75,7 @@ import { resolveStatusState } from "@/utils/status";
 import { http } from "@/utils/request";
 import { formatDateTime } from "@/utils/date";
 import { pad } from "@/utils/format";
-function toArray<T>(input: T | T[] | null | undefined): T[] {
-	if (!input) return [];
-	return Array.isArray(input) ? input : [input];
-}
+import { toArray } from "@/utils/array";
 
 const form = ref<Record<string, any>>({
 	orderCode: "",

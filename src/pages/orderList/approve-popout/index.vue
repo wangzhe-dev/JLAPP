@@ -44,6 +44,7 @@ import CCard from "@/components/c-card/CCard.vue";
 import { ensurePicturePreviewUrl } from "@/utils/picture";
 import { getRepairMessage } from "@/api/order";
 import { pad } from "@/utils/format";
+import { toArray } from "@/utils/array";
 
 type ApproveOption = {
 	label: string;
@@ -208,11 +209,6 @@ async function loadRepairRecords(id: string) {
 	} finally {
 		recordsLoading.value = false;
 	}
-}
-
-function toArray(input: any): any[] {
-	if (!input) return [];
-	return Array.isArray(input) ? input : [input];
 }
 
 function formatRecordTime(value: any) {

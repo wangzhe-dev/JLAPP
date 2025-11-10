@@ -120,11 +120,7 @@ import type { OptionItem } from "./repairFormSchema";
 import { isH5 } from "@/utils/platform";
 import { formatDateTime } from "@/utils/date";
 import { pad } from "@/utils/format";
-
-function toArray<T>(input: T | T[] | null | undefined): T[] {
-	if (!input) return [];
-	return Array.isArray(input) ? input : [input];
-}
+import { toArray } from "@/utils/array";
 
 function normalizePictureList(raw: any): Array<{ id: string; src: string }> {
 	const list = toArray(raw)

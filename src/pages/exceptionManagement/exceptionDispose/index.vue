@@ -125,6 +125,7 @@ import {
 } from "@/api/exception";
 import { EXCEPTION_LIST_REFRESH_KEY } from "@/pages/exceptionManagement/constants";
 import { ensurePicturePreviewUrl, stripPictureBaseUrl } from "@/utils/picture";
+import { toArray } from "@/utils/array";
 // Tabs 状态 & 映射
 const statusTabs = ref<Array<{ name: string; title: string }>>([]);
 const statusLabelMap = ref<Record<string, string>>({});
@@ -293,10 +294,6 @@ function itemClosed(item: any) {
 	// 约定：40/50 等为已处理/完成，根据需要调整
 	const code = Number(item?.documentStatus);
 	return [40, 50, 60, 70, 80, 90].includes(code);
-}
-function toArray<T>(input: T | T[] | null | undefined): T[] {
-	if (input === undefined || input === null) return [];
-	return Array.isArray(input) ? input : [input];
 }
 
 function resolveCardLines(item: any) {
