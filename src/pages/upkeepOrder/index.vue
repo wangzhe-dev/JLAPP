@@ -96,7 +96,7 @@ import {
 } from "@/api/order";
 import { queryDictList } from "@/api/dict";
 import { resolveStatusState } from "@/utils/status";
-import { ensurePicturePreviewUrl } from "@/utils/picture";
+import { ensurePicturePreviewUrl, normalizePictureList } from "@/utils/picture";
 import { formatDateTime } from "@/utils/date";
 import { pad } from "@/utils/format";
 import { toArray } from "@/utils/array";
@@ -379,32 +379,6 @@ function refreshStatusName() {
 	if (!code) return;
 	const label = statusDict.value[code];
 	if (label) form.value.statusName = label;
-}
-
-function normalizePictureList(raw: any): Array<{ id: string; src: string }> {
-	const list = toArray(raw)
-		.flatMap((item: any) => {
-			if (!item) return [];
-			if (typeof item === "string")
-				return item
-					.split(/[,;]/)
-					.map((s) => s.trim())
-					.filter(Boolean);
-			return [
-				item.url ||
-					item.src ||
-					item.path ||
-					item.pictureUrl ||
-					item.imageUrl ||
-					item,
-			];
-		})
-		.map((item, index) => ({
-			id: `${index}`,
-			src: ensurePicturePreviewUrl(item),
-		}))
-		.filter((item) => !!item.src);
-	return list;
 }
 
 function diffMinutes(start: any, end: any): number {

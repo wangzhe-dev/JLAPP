@@ -56,7 +56,7 @@ import type {
 import SparePartSelector from "@/pages/maintainOrder/components/SparePartSelector.vue";
 import ChangePartsList from "@/pages/maintainOrder/components/ChangePartsList.vue";
 import CCard from "@/components/c-card/CCard.vue";
-import { ensurePicturePreviewUrl } from "@/utils/picture";
+import { ensurePicturePreviewUrl, normalizePictureList } from "@/utils/picture";
 import { getPartsManagementlist, selectPlanOrder } from "@/api/order";
 import { formatDateTime } from "@/utils/date";
 import { pad } from "@/utils/format";
@@ -415,20 +415,6 @@ function formatChangeParts(record: any) {
 		.filter(Boolean);
 
 	return parts.join("；");
-}
-
-function normalizePictureList(raw: any) {
-	if (!raw) return [];
-	if (Array.isArray(raw)) {
-		return raw.map((item) => ensurePicturePreviewUrl(item)).filter(Boolean);
-	}
-	if (typeof raw === "string") {
-		return raw
-			.split(/[;,]/)
-			.map((item) => ensurePicturePreviewUrl(item.trim()))
-			.filter(Boolean);
-	}
-	return [ensurePicturePreviewUrl(raw)].filter(Boolean);
 }
 
 function unwrapRecordList(raw: any): any[] {

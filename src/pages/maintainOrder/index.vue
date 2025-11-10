@@ -112,7 +112,7 @@ import SparePartSelector from "./components/SparePartSelector.vue";
 import ChangePartsList from "./components/ChangePartsList.vue";
 import CCard from "@/components/c-card/CCard.vue";
 import { queryDictList } from "@/api/dict";
-import { ensurePicturePreviewUrl } from "@/utils/picture";
+import { ensurePicturePreviewUrl, normalizePictureList } from "@/utils/picture";
 import { resolveStatusState } from "@/utils/status";
 import { requestUrl } from "@/config";
 import { buildRepairFormFields } from "./repairFormSchema";
@@ -121,25 +121,6 @@ import { isH5 } from "@/utils/platform";
 import { formatDateTime } from "@/utils/date";
 import { pad } from "@/utils/format";
 import { toArray } from "@/utils/array";
-
-function normalizePictureList(raw: any): Array<{ id: string; src: string }> {
-	const list = toArray(raw)
-		.flatMap((item: any) => {
-			if (!item) return [];
-			if (typeof item === "string")
-				return item
-					.split(/[,;]/)
-					.map((s) => s.trim())
-					.filter(Boolean);
-			return [item.url || item.src || item.path || item];
-		})
-		.map((item, index) => ({
-			id: `${index}`,
-			src: ensurePicturePreviewUrl(item),
-		}))
-		.filter((item) => !!item.src);
-	return list;
-}
 
 function normalizeImagePathList(input: any): string {
 	if (!input) return "";

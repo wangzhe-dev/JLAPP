@@ -70,7 +70,7 @@ import type { CFormSchema, CFormSchemaField } from "@/components/c-form/types";
 import CCard from "@/components/c-card/CCard.vue";
 import { orderListDetail, getRepairMessage } from "@/api/order";
 import { queryDictList } from "@/api/dict";
-import { ensurePicturePreviewUrl } from "@/utils/picture";
+import { ensurePicturePreviewUrl, normalizePictureList } from "@/utils/picture";
 import { resolveStatusState } from "@/utils/status";
 import { http } from "@/utils/request";
 import { formatDateTime } from "@/utils/date";
@@ -259,20 +259,6 @@ function formatRecordTime(value: any) {
 	if (!value) return "-";
 	const formatted = formatDateTime(value);
 	return formatted === "-" ? String(value ?? "-") : formatted;
-}
-
-function normalizePictureList(raw: any) {
-	if (!raw) return [];
-	if (Array.isArray(raw)) {
-		return raw.map((item) => ensurePicturePreviewUrl(item)).filter(Boolean);
-	}
-	if (typeof raw === "string") {
-		return raw
-			.split(/[;,]/)
-			.map((item) => ensurePicturePreviewUrl(item.trim()))
-			.filter(Boolean);
-	}
-	return [ensurePicturePreviewUrl(raw)].filter(Boolean);
 }
 
 function ensureParams(options: Record<string, any>) {

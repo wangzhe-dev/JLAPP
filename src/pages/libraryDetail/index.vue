@@ -31,7 +31,7 @@ import { CForm } from "@/components/c-form";
 import type { CFormSchema, CFormSchemaField } from "@/components/c-form/types";
 import ImageGrid from "@/components/image-grid/ImageGrid.vue";
 import { findDetailsById } from "@/api/exception";
-import { ensurePicturePreviewUrl } from "@/utils/picture";
+import { ensurePicturePreviewUrl, normalizePictureList } from "@/utils/picture";
 import { formatDateTime } from "@/utils/date";
 
 const loading = ref<boolean>(false);
@@ -165,21 +165,6 @@ function buildFields(): CFormSchemaField[] {
 			slotName: "scenePictures",
 		},
 	];
-}
-
-function normalizePictureList(raw: any) {
-	if (!raw) return [];
-	const list = Array.isArray(raw)
-		? raw
-		: String(raw)
-			.replace(/,$/, "")
-			.split(/[,;]/)
-			.map((item) => item.trim())
-			.filter(Boolean);
-	return list.map((item, index) => ({
-		id: `${index}`,
-		src: ensurePicturePreviewUrl(item),
-	}));
 }
 
 async function loadDetail(id: string) {

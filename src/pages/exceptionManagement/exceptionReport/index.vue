@@ -68,6 +68,7 @@ import CCard from "@/components/c-card/CCard.vue";
 import type { CFormSchema } from "@/components/c-form/types";
 import { WORK_ORDER_PICK_RESULT_CACHE_KEY } from "@/utils/picker";
 import { pad } from "@/utils/format";
+import { normalizePictureList, ensurePicturePreviewUrl } from "@/utils/picture";
 
 // ====== 表单基础状态 ======
 // form 内部约定：_mode: 'create' | 'edit' | 'view'; _locks: Record<string,1>
@@ -336,48 +337,6 @@ const FILE_PREVIEW_LEGACY_BASES = Array.from(
 	)
 );
 
-function ensurePicturePreviewUrl(entry: any): string {
-	if (!entry) return "";
-	let raw = "";
-	if (typeof entry === "string") raw = entry;
-	else if (typeof entry === "object") {
-		raw =
-			entry.resultUrl ||
-			entry.url ||
-			entry.fileUrl ||
-			entry.thumb ||
-			entry.path ||
-			entry.filepath ||
-			"";
-	}
-	if (!raw) return "";
-	const trimmed = String(raw).trim();
-	if (!trimmed) return "";
-	if (
-		/^(?:data:|blob:|file:|wxfile:|http:\/\/tmp|https:\/\/tmp)/i.test(trimmed)
-	)
-		return trimmed;
-	if (/^\/(?:_doc|_downloads|_www|storage|private)/i.test(trimmed))
-		return trimmed;
-	if (/^\/\//.test(trimmed)) return `${FILE_PREVIEW_PROTOCOL}${trimmed}`;
-	if (/^(?:https?:|wss?:|ftp:)/i.test(trimmed)) {
-		if (FILE_PREVIEW_BASE) {
-			for (const legacy of FILE_PREVIEW_LEGACY_BASES) {
-				if (legacy && trimmed.startsWith(legacy)) {
-					const relative = trimmed.slice(legacy.length).replace(/^\/+/, "");
-					return `${FILE_PREVIEW_BASE.replace(/\/+$/, "")}/${relative}`;
-				}
-			}
-		}
-		return trimmed;
-	}
-	const base = FILE_PREVIEW_BASE;
-	if (!base) return trimmed;
-	const normalizedBase = base.replace(/\/+$/, "");
-	const normalizedPath = trimmed.replace(/^\/+/, "");
-	return `${normalizedBase}/${normalizedPath}`;
-}
-
 function stripPicturePreviewBase(raw: string): string {
 	if (!raw) return "";
 	let current = raw.trim();
@@ -508,26 +467,6 @@ function normalizeDateTime(value: any) {
 	return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(
 		d.getHours()
 	)}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-}
-
-function normalizePictureList(input: any) {
-	if (!input) return [];
-	let list: any[] = [];
-	if (Array.isArray(input)) list = input;
-	else if (typeof input === "string")
-		list = input
-			.split(/[,;]/)
-			.map((s) => s.trim())
-			.filter(Boolean);
-	else list = [input];
-	const normalized = list
-		.map((item) => ensurePicturePreviewUrl(item))
-		.filter(Boolean);
-	const unique: string[] = [];
-	normalized.forEach((url) => {
-		if (!unique.includes(url)) unique.push(url);
-	});
-	return unique;
 }
 
 async function applyStoredFormData(afterDetail = false) {

@@ -41,7 +41,7 @@ import type {
 } from "@/components/c-form/types";
 
 import CCard from "@/components/c-card/CCard.vue";
-import { ensurePicturePreviewUrl } from "@/utils/picture";
+import { ensurePicturePreviewUrl, normalizePictureList } from "@/utils/picture";
 import { getRepairMessage } from "@/api/order";
 import { pad } from "@/utils/format";
 import { toArray } from "@/utils/array";
@@ -292,20 +292,6 @@ function formatChangeParts(record: any) {
 		.filter(Boolean);
 
 	return parts.join("；");
-}
-
-function normalizePictureList(raw: any) {
-	if (!raw) return [];
-	if (Array.isArray(raw)) {
-		return raw.map((item) => ensurePicturePreviewUrl(item)).filter(Boolean);
-	}
-	if (typeof raw === "string") {
-		return raw
-			.split(/[;,]/)
-			.map((item) => ensurePicturePreviewUrl(item.trim()))
-			.filter(Boolean);
-	}
-	return [ensurePicturePreviewUrl(raw)].filter(Boolean);
 }
 
 function unwrapRecordList(raw: any): any[] {

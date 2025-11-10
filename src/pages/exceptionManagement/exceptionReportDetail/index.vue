@@ -48,7 +48,7 @@ import type {
 	CFormSchemaField,
 } from "@/components/c-form/types";
 import CCard from "@/components/c-card/CCard.vue";
-import { ensurePicturePreviewUrl } from "@/utils/picture";
+import { ensurePicturePreviewUrl, normalizePictureList } from "@/utils/picture";
 import { formatDate } from "sard-uniapp";
 import { formatDateTime } from "@/utils/date";
 const formRef = ref<CFormExpose | null>(null);
@@ -177,21 +177,6 @@ function buildFields(): CFormSchemaField[] {
 function formatRecordTime(record: any) {
 	const raw = record?.createdTime || "-";
 	return formatDateTime(raw);
-}
-
-function normalizePictureList(raw: any) {
-	if (!raw) return [];
-	const list = Array.isArray(raw)
-		? raw
-		: String(raw)
-				.replace(/,$/, "")
-				.split(/[,;]/)
-				.map((item) => item.trim())
-				.filter(Boolean);
-	return list.map((item, index) => ({
-		id: `${index}`,
-		src: ensurePicturePreviewUrl(item),
-	}));
 }
 
 async function loadDetail(id: string) {
