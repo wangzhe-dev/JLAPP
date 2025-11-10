@@ -459,7 +459,7 @@ async function handleRejectBeforeClose(
 		console.error("[exceptionDispose] reject failed", error);
 		const msg = error?.msg || error?.message || "操作失败";
 		uni.showToast({ title: msg, icon: "none" });
-		return Promise.reject(false);
+		return false;
 	} finally {
 		rejectSubmitting.value = false;
 	}
@@ -492,7 +492,7 @@ async function handleEscalateBeforeClose(payload?: {
 		console.error("[exceptionDispose] escalate failed", error);
 		const msg = error?.msg || error?.message || error?.raw?.msg || "升级失败";
 		uni.showToast({ title: msg, icon: "none" });
-		return Promise.reject(false);
+		return false;
 	} finally {
 		escalateSubmitting.value = false;
 		uni.hideLoading();
@@ -715,7 +715,7 @@ async function handleTransferBeforeClose(payload?: {
 		console.error("[exceptionDispose] transfer failed", error);
 		const msg = error?.msg || "转派失败";
 		uni.showToast({ title: msg, icon: "none" });
-		return Promise.reject(false);
+		return false;
 	} finally {
 		uni.hideLoading();
 	}
@@ -743,7 +743,7 @@ async function handleDispatchBeforeClose(payload?: {
 	} catch (error: any) {
 		const msg = error?.msg || error?.message || error?.raw?.msg || "派工失败";
 		uni.showToast({ title: msg, icon: "none" });
-		return Promise.reject(false);
+		return false;
 	} finally {
 		dispatchSubmitting.value = false;
 		uni.hideLoading();
@@ -782,7 +782,7 @@ async function handleCompleteBeforeClose(payload?: {
 		console.error("[exceptionDispose] complete failed", error);
 		const msg = error?.msg || error?.message || error?.raw?.msg || "处理失败";
 		uni.showToast({ title: msg, icon: "none" });
-		return Promise.reject(false);
+		return false;
 	} finally {
 		completeSubmitting.value = false;
 		uni.hideLoading();

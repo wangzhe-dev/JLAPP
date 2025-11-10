@@ -339,7 +339,7 @@ async function handleBeforeClose(type: "confirm" | "cancel" | "close") {
 	const form = formRef.value;
 	if (form?.validate) {
 		const ok = await form.validate();
-		if (!ok) return Promise.reject(false);
+		if (!ok) return false;
 	}
 	if (typeof props.beforeClose === "function") {
 		const approvalResult =

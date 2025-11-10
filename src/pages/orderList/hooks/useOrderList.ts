@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { ref, reactive, nextTick, computed, watch } from "vue";
+import { ref, reactive, nextTick, computed, watch, onUnmounted } from "vue";
 import { onLoad, onShow } from "@dcloudio/uni-app";
 import {
 	userAllList,
@@ -1276,6 +1276,14 @@ export function useOrderList() {
 					listRef.value.reload?.();
 				}
 			});
+	});
+
+	// 清理定时器，防止内存泄漏
+	onUnmounted(() => {
+		if (searchDebounceTimer.value) {
+			clearTimeout(searchDebounceTimer.value);
+			searchDebounceTimer.value = null;
+		}
 	});
 
 	return {

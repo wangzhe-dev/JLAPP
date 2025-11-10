@@ -1,0 +1,278 @@
+{
+  "project": "JLAPP",
+  "analysis_date": "2025-11-10",
+  "total_issues": 45,
+  "total_files_affected": 28,
+  "estimated_fix_time_hours": 22,
+  "issues": [
+    {
+      "id": "P0-001",
+      "severity": "critical",
+      "title": "派工失败返回值错误",
+      "description": "handleDispatchBeforeClose 使用 Promise.reject(false) 而非 return false，导致派工失败时弹窗无法正确关闭",
+      "file": "src/pages/exceptionManagement/exceptionDispose/index.vue",
+      "line": 746,
+      "impact": "派工流程中断，用户体验严重受损",
+      "fix_time_minutes": 15,
+      "tags": ["error-handling", "ui-bug", "critical-path"]
+    },
+    {
+      "id": "P0-002",
+      "severity": "critical",
+      "title": "异常库页签切换逻辑混乱",
+      "description": "搜索防抖（onSearch 300ms, watch 200ms）和页签切换共用 searchTimer，导致快速操作时请求混乱",
+      "file": "src/pages/exceptionManagement/exceptionLibrary/index.vue",
+      "line": "119-191",
+      "impact": "显示错误的搜索结果，影响知识库查询功能",
+      "fix_time_minutes": 120,
+      "tags": ["logic-bug", "search", "tab-switching"]
+    },
+    {
+      "id": "P1-001",
+      "severity": "high",
+      "title": "工单列表搜索防抖定时器未清理",
+      "description": "searchDebounceTimer 在组件卸载时未清理，可能导致内存泄漏和僵尸定时器",
+      "file": "src/pages/orderList/hooks/useOrderList.ts",
+      "line": "127-448",
+      "impact": "长时间使用应用时内存占用持续增加",
+      "fix_time_minutes": 15,
+      "tags": ["memory-leak", "timer", "cleanup"]
+    },
+    {
+      "id": "P1-002",
+      "severity": "high",
+      "title": "异常库搜索防抖定时器未清理",
+      "description": "searchTimer 在页面卸载时未清理，页面切换时定时器持续执行",
+      "file": "src/pages/exceptionManagement/exceptionLibrary/index.vue",
+      "line": "119-189",
+      "impact": "频繁切换页面导致内存和网络资源泄漏",
+      "fix_time_minutes": 10,
+      "tags": ["memory-leak", "timer", "cleanup"]
+    },
+    {
+      "id": "P1-003",
+      "severity": "high",
+      "title": "知识库详情加载无重试机制且无并发取消",
+      "description": "详情加载失败时无法重试，且用户返回再进来时可能有并发请求",
+      "file": "src/pages/libraryDetail/index.vue",
+      "line": "190-207",
+      "impact": "用户遇到加载失败时无法恢复，或导致数据不一致",
+      "fix_time_minutes": 60,
+      "tags": ["error-handling", "race-condition", "ux"]
+    },
+    {
+      "id": "P2-001",
+      "severity": "high",
+      "title": "EDC 通知方式失败",
+      "description": "handleEdcCode 未验证，noticeType.join() 可能产生无效字符串，导致异常升级失败",
+      "file": "src/pages/exceptionManagement/exceptionDispose/index.vue",
+      "line": "468-500",
+      "impact": "异常升级功能无法正常使用",
+      "fix_time_minutes": 90,
+      "tags": ["validation", "api-failure", "data-type"]
+    },
+    {
+      "id": "P2-002",
+      "severity": "medium",
+      "title": "@ts-nocheck 禁用类型检查 - picker.ts",
+      "description": "整个文件禁用类型检查，工作订单选择接口无类型保护",
+      "file": "src/utils/picker.ts",
+      "line": 2,
+      "impact": "无法发现类型错误，增加运行时风险",
+      "fix_time_minutes": 30,
+      "tags": ["typescript", "type-safety"]
+    },
+    {
+      "id": "P2-003",
+      "severity": "medium",
+      "title": "@ts-nocheck 禁用类型检查 - useOrderList.ts",
+      "description": "1300+ 行代码的 hook 完全禁用类型检查",
+      "file": "src/pages/orderList/hooks/useOrderList.ts",
+      "line": 1,
+      "impact": "大量类型错误无法检测",
+      "fix_time_minutes": 120,
+      "tags": ["typescript", "type-safety"]
+    },
+    {
+      "id": "P2-004",
+      "severity": "medium",
+      "title": "@ts-nocheck 禁用类型检查 - libraryDetail.vue",
+      "description": "知识库详情页面禁用类型检查",
+      "file": "src/pages/libraryDetail/index.vue",
+      "line": 20,
+      "impact": "页面逻辑无类型保护",
+      "fix_time_minutes": 45,
+      "tags": ["typescript", "type-safety"]
+    },
+    {
+      "id": "P2-005",
+      "severity": "medium",
+      "title": "@ts-nocheck 禁用类型检查 - exceptionDispose.vue",
+      "description": "异常处理页面禁用类型检查，派工、升级等关键操作无保护",
+      "file": "src/pages/exceptionManagement/exceptionDispose/index.vue",
+      "line": 101,
+      "impact": "关键功能无类型保护",
+      "fix_time_minutes": 60,
+      "tags": ["typescript", "type-safety"]
+    },
+    {
+      "id": "P2-006",
+      "severity": "medium",
+      "title": "Any 类型滥用 - useTabSwipe.ts",
+      "description": "多个参数和返回值使用 any 类型",
+      "file": "src/composables/useTabSwipe.ts",
+      "line": "12,19,54,78,83,91",
+      "impact": "tab 切换逻辑无类型检查",
+      "fix_time_minutes": 30,
+      "tags": ["typescript", "type-safety", "composable"]
+    },
+    {
+      "id": "P2-007",
+      "severity": "medium",
+      "title": "异常库搜索 API 错误处理不足",
+      "description": "catch 中直接 throw，无错误转换或分类",
+      "file": "src/pages/exceptionManagement/exceptionLibrary/index.vue",
+      "line": "229-234",
+      "impact": "用户看到的错误信息可能不友好",
+      "fix_time_minutes": 20,
+      "tags": ["error-handling", "api"]
+    },
+    {
+      "id": "P2-008",
+      "severity": "medium",
+      "title": "转派失败返回值错误",
+      "description": "handleTransferBeforeClose 使用 Promise.reject(false)",
+      "file": "src/pages/exceptionManagement/exceptionDispose/index.vue",
+      "line": 718,
+      "impact": "转派失败时弹窗无法正确关闭",
+      "fix_time_minutes": 15,
+      "tags": ["error-handling", "ui-bug"]
+    },
+    {
+      "id": "P2-009",
+      "severity": "medium",
+      "title": "异常升级失败返回值错误",
+      "description": "handleEscalateBeforeClose 使用 Promise.reject(false)",
+      "file": "src/pages/exceptionManagement/exceptionDispose/index.vue",
+      "line": 495,
+      "impact": "升级失败时弹窗无法正确关闭",
+      "fix_time_minutes": 15,
+      "tags": ["error-handling", "ui-bug"]
+    },
+    {
+      "id": "P3-001",
+      "severity": "low",
+      "title": "时间格式化函数重复定义",
+      "description": "formatTime 在多个文件中重复定义，实现不一致",
+      "file": "src/pages/orderList/hooks/useOrderList.ts, src/pages/exceptionManagement/exceptionLibrary/index.vue, src/pages/exceptionManagement/exceptionDispose/index.vue",
+      "line": "478, 201, 291",
+      "impact": "代码维护困难，易出现不一致",
+      "fix_time_minutes": 30,
+      "tags": ["refactoring", "utils", "code-duplication"]
+    },
+    {
+      "id": "P3-002",
+      "severity": "low",
+      "title": "URL 构建函数重复定义",
+      "description": "buildUrl 在 useOrderList.ts 和 navigation.ts 中重复定义",
+      "file": "src/pages/orderList/hooks/useOrderList.ts, src/utils/navigation.ts",
+      "line": "300, 10",
+      "impact": "代码重复，参数处理逻辑可能不一致",
+      "fix_time_minutes": 20,
+      "tags": ["refactoring", "utils", "code-duplication"]
+    },
+    {
+      "id": "P3-003",
+      "severity": "low",
+      "title": "错误消息提取代码重复",
+      "description": "error?.msg || error?.message || error?.raw?.msg 模式重复超过 15 次",
+      "file": "multiple files",
+      "line": "多处",
+      "impact": "维护困难，易遗漏新的错误字段",
+      "fix_time_minutes": 30,
+      "tags": ["refactoring", "utils", "error-handling"]
+    },
+    {
+      "id": "P3-004",
+      "severity": "low",
+      "title": "硬编码的状态码缺少语义",
+      "description": "数字 10, 20, 30, 40, 50 等没有对应的常量定义",
+      "file": "src/pages/exceptionManagement/exceptionDispose/index.vue",
+      "line": "299-387",
+      "impact": "维护困难，易出错",
+      "fix_time_minutes": 45,
+      "tags": ["constants", "refactoring", "magic-numbers"]
+    },
+    {
+      "id": "P3-005",
+      "severity": "low",
+      "title": "不必要的重渲染 - statusTabs computed",
+      "description": "statusTabs 在 source 或 activeTabName 改变时重新计算，应缓存",
+      "file": "src/pages/orderList/hooks/useOrderList.ts",
+      "line": "55-64",
+      "impact": "性能下降，特别是在大字典列表时",
+      "fix_time_minutes": 30,
+      "tags": ["performance", "optimization"]
+    },
+    {
+      "id": "P3-006",
+      "severity": "low",
+      "title": "大量数据处理在渲染路径",
+      "description": "resolveCardLines 函数包含 50+ 行代码，在每个卡片渲染时调用",
+      "file": "src/pages/orderList/hooks/useOrderList.ts",
+      "line": "508-623",
+      "impact": "性能下降，特别是在列表较长时",
+      "fix_time_minutes": 45,
+      "tags": ["performance", "optimization", "refactoring"]
+    },
+    {
+      "id": "P3-007",
+      "severity": "low",
+      "title": "状态频繁同步到存储",
+      "description": "source 改变时每次都调用 loadDictionaries，导致 API 请求和存储操作频繁",
+      "file": "src/pages/orderList/hooks/useOrderList.ts",
+      "line": "362-370",
+      "impact": "性能下降，消耗用户流量",
+      "fix_time_minutes": 45,
+      "tags": ["performance", "optimization", "storage"]
+    },
+    {
+      "id": "P3-008",
+      "severity": "low",
+      "title": "onShow 中重复初始化逻辑",
+      "description": "初始化函数和 onShow 都调用 reload，可能导致重复请求",
+      "file": "src/pages/exceptionManagement/exceptionDispose/index.vue",
+      "line": "170-240",
+      "impact": "额外的网络请求和渲染",
+      "fix_time_minutes": 20,
+      "tags": ["lifecycle", "optimization"]
+    }
+  ],
+  "summary": {
+    "by_severity": {
+      "critical": 2,
+      "high": 8,
+      "medium": 8,
+      "low": 9
+    },
+    "by_category": {
+      "error_handling": 6,
+      "memory_leak": 3,
+      "type_safety": 5,
+      "code_duplication": 3,
+      "performance": 4,
+      "ui_bug": 3,
+      "data_validation": 2,
+      "refactoring": 4
+    }
+  },
+  "recommendations": [
+    "立即修复 P0 级问题（派工返回值和页签切换）",
+    "为所有异步操作添加 AbortController 支持",
+    "为所有定时器添加生命周期清理",
+    "逐步移除 @ts-nocheck，改为修复具体类型错误",
+    "提取公共工具库（time, error, url, constants）",
+    "改进错误处理的一致性",
+    "添加数据验证中间件"
+  ]
+}
