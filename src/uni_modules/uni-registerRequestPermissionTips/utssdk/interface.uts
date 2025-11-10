@@ -1,0 +1,19 @@
+export type RequestPermissionTipsListener = {
+	onRequest ?: ((permissions : Array<string>) => void) | null,
+	onConfirm ?: ((permission : Array<string>) => void) | null,
+	onComplete ?: ((permissions : UTSJSONObject) => void) | null
+}
+
+
+export type RegisterRequestPermissionTipsListener = (listener : RequestPermissionTipsListener | null) => void
+export type UnregisterRequestPermissionTipsListener = (listener : RequestPermissionTipsListener | null) => void
+export type SetRequestPermissionTips = (tips : UTSJSONObject) => void
+
+export interface Uni {
+
+	registerRequestPermissionTipsListener : RegisterRequestPermissionTipsListener,
+
+	unregisterRequestPermissionTipsListener : UnregisterRequestPermissionTipsListener
+
+	setRequestPermissionTips : SetRequestPermissionTips
+}

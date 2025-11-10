@@ -1,0 +1,148 @@
+import { UnregisterRequestPermissionTipsListener, RegisterRequestPermissionTipsListener, RequestPermissionTipsListener, SetRequestPermissionTips } from "../interface";
+import RelativeLayout from 'android.widget.RelativeLayout';
+import LinearLayout from 'android.widget.LinearLayout';
+import Color from 'android.graphics.Color';
+import TextView from 'android.widget.TextView';
+import ViewGroup from 'android.view.ViewGroup';
+import Activity from 'android.app.Activity';
+import HashMap from 'java.util.HashMap';
+import AnimationUtils from 'android.view.animation.AnimationUtils';
+import R from 'io.dcloud.uts.permissionrequest.R'
+import Html from 'android.text.Html';
+import View from 'android.view.View';
+import Runnable from "java.lang.Runnable"
+
+let PermissionTipsView : View | null = null
+let permissionTips : HashMap<String, String> = new HashMap<String, String>()
+var permissionListener : RequestPermissionListener | null = null
+var listener : RequestPermissionTipsListener | null = null
+
+@UTSJS.keepAlive
+export function unregisterRequestPermissionTipsListener(e : RequestPermissionTipsListener | null) {
+	listener = null;
+	if (permissionListener != null) {
+		permissionListener!.stop()
+		permissionListener = null
+	}
+	if (PermissionTipsView != null) {
+		if (PermissionTipsView!.getParent() != null) {
+			PermissionTipsView!.setAnimation(null);
+			((PermissionTipsView!.getParent()) as ViewGroup).removeView(PermissionTipsView)
+		}
+		PermissionTipsView = null
+	}
+}
+
+@UTSJS.keepAlive
+export function registerRequestPermissionTipsListener(l : RequestPermissionTipsListener | null) {
+	listener = l
+	if (permissionListener == null) {
+		permissionListener = uni.createRequestPermissionListener()
+		permissionListener!.onRequest((permissions : Array<string>) => {
+			if (listener != null)
+				listener!.onRequest?.invoke(permissions)
+		})
+		permissionListener!.onConfirm((permissions : Array<string>) => {
+			UTSAndroid.getUniActivity()!.runOnUiThread(new ConfirmRunnable(permissions))
+		})
+		permissionListener!.onComplete((permissions : Array<string>) => {
+			UTSAndroid.getUniActivity()!.runOnUiThread(new CompleteRunnable(permissions))
+		})
+	}
+}
+
+class ConfirmRunnable implements Runnable {
+	permissions : Array<string>
+	constructor(permissions : Array<string>) {
+		this.permissions = permissions
+	}
+	override run() {
+		let activity = UTSAndroid.getUniActivity()!
+		if (PermissionTipsView != null && PermissionTipsView!.getParent() != null) {
+			PermissionTipsView!.setAnimation(null);
+			((PermissionTipsView!.getParent()) as ViewGroup).removeView(PermissionTipsView)
+		}
+		if (this.permissions.length > 0) {
+			try {
+				PermissionTipsView = createPermissionWindow(activity, this.permissions);
+				if (PermissionTipsView != null) {
+					(activity.findViewById(android.R.id.content) as ViewGroup).addView(PermissionTipsView!)
+				}
+			} catch (e) {
+				console.log(e)
+			}
+		}
+		if (listener != null)
+			listener!.onConfirm?.invoke(this.permissions)
+	}
+}
+
+class CompleteRunnable implements Runnable {
+	permissions : Array<string>
+	constructor(permissions : Array<string>) {
+		this.permissions = permissions
+	}
+	override run() {
+		let activity = UTSAndroid.getUniActivity()!
+		if (PermissionTipsView != null) {
+			PermissionTipsView!.setAnimation(AnimationUtils.loadAnimation(activity, R.anim.popupwindow_exit));
+			((PermissionTipsView!.getParent()) as ViewGroup).removeView(PermissionTipsView!)
+			PermissionTipsView = null
+		}
+		if (listener != null) {
+			var permissionStatus = {}
+			for (var p in this.permissions) {
+				permissionStatus[p] = UTSAndroid.checkSystemPermissionGranted(UTSAndroid.getUniActivity()!, [p]) ? "grant" : "denied"
+			}
+			listener!.onComplete?.invoke(permissionStatus)
+		}
+	}
+}
+
+export const setRequestPermissionTips : SetRequestPermissionTips = (tips : UTSJSONObject) => {
+	permissionTips.clear()
+	for (var k in tips) {
+		permissionTips.put(k, tips[k] != null ? tips[k].toString() : "")
+	}
+}
+
+function createPermissionWindow(activity : Activity, permissions : Array<string>) : ViewGroup | null {
+	let rootView = new RelativeLayout(activity);
+	rootView.setBackgroundColor(Color.TRANSPARENT);
+	let backgroundView = new LinearLayout(activity);
+	backgroundView.setPadding(30, 0, 30, 30);
+	backgroundView.setOrientation(1)
+	backgroundView.setBackgroundResource(R.drawable.dcloud_permission_background);
+	let permissionTipsList : Array<string> = new Array<string>()
+	for (var p in permissions) {
+		if (permissionTips.containsKey(p) && permissionTipsList.indexOf(permissionTips.get(p)) == -1) {
+			permissionTipsList.push(permissionTips.get(p)!)
+		}
+	}
+	for (var p in permissionTipsList) {
+		let text = new TextView(activity);
+		text.setText(Html.fromHtml(p, Html.FROM_HTML_SEPARATOR_LINE_BREAK_HEADING))
+		text.setPadding(0, 30, 0, 0)
+		text.setTextSize((5 * getScale()).toFloat())
+		text.setTextColor(Color.BLACK)
+		backgroundView.addView(text)
+	}
+	if (backgroundView.getChildCount() == 0) {
+		return null;
+	}
+	let rll = new RelativeLayout.LayoutParams(-1, -2)
+	rll.topMargin = (UTSAndroid.getStatusBarHeight() * getScale()).toInt();
+	rll.leftMargin = 30;
+	rll.rightMargin = 30;
+	rll.bottomMargin = 30;
+	rootView.addView(backgroundView, rll)
+	rootView.setAnimation(AnimationUtils.loadAnimation(activity, R.anim.popupwindow_enter));
+	return rootView;
+}
+
+function getScale() : Float {
+	if (UTSAndroid.getUniActivity() != null) {
+		return UTSAndroid.getUniActivity()!.resources.displayMetrics.scaledDensity
+	}
+	return (0 as number).toFloat();
+}

@@ -1,0 +1,80 @@
+/** 自定义底部导航覆盖样式
+ * 适用于内置 tabBar （通过自定义容器包裹或注入）
+ * 使用方式：在页面或全局引入后，外层结构添加 class="content" 并包裹原 tabbar
+ */
+$content-shadow: 0 4px 10px rgba(0,0,0,0.2);
+$content-radius: 20px;
+
+.content {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: 100%;
+  z-index: 999;
+  background: var(--color-surface, #ffffff);
+  box-shadow: var(--shadow-md, $content-shadow);
+  border-radius: var(--radius-md, #{$content-radius}) var(--radius-md, #{$content-radius}) 0 0;
+  border-top: 1px solid var(--color-border, rgba(0,0,0,0.06));
+  padding-bottom: constant(safe-area-inset-bottom); /* iOS < 11.2 */
+  padding-bottom: env(safe-area-inset-bottom);      /* iOS >= 11.2 */
+  backdrop-filter: saturate(180%) blur(12px);
+  -webkit-backdrop-filter: saturate(180%) blur(12px);
+  /* 渐变可选：取消注释使用品牌渐变 */
+  /* background: linear-gradient(145deg, rgba(11,61,145,0.95), rgba(11,61,145,0.88)); */
+
+  .tabber_box {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-evenly;
+    background: transparent;
+    padding: 6px 4px 8px;
+    min-height: 54px;
+
+    .tabber_item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      font-family: 'Montserrat', 'Helvetica Neue', Arial, sans-serif;
+      letter-spacing: 1px;
+      gap: 2px;
+      min-width: 64px;
+      padding: 4px 4px 2px;
+      transition: transform 0.25s ease, color 0.25s ease, opacity 0.25s ease;
+
+      .tab-icon {
+        font-size: var(--font-size-sm, 12px);
+        line-height: 1;
+        transition: transform 0.3s ease-in-out, color 0.25s ease;
+        transform-origin: center;
+      }
+      .tab-text { font-size: 10px; font-weight: 500; }
+
+      .selectedColor {
+        color: var(--color-primary, #0B3D91) !important;
+        font-weight: 600;
+        text-shadow: 0 0 10px rgba(1, 92, 168, 0.14);
+        transform: scale(1);
+      }
+      .unSelectedColor {
+        color: var(--color-text-2, #64748b);
+        transform: scale(.9);
+        opacity: .9;
+      }
+
+      &:hover .tab-icon { transform: scale(1); }
+      &:active { transform: translateY(1px); }
+    }
+  }
+}
+
+/* 暗色模式 */
+:root[data-theme='dark'] .content {
+  background: rgba(17,24,39,0.9);
+  border-top-color: rgba(255,255,255,0.08);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.45);
+}
+:root[data-theme='dark'] .content .tabber_item .unSelectedColor { color:#94a3b8; }
+:root[data-theme='dark'] .content .tabber_item .selectedColor { color:#bcd9ff !important; text-shadow:0 0 8px rgba(56,132,255,0.35); }

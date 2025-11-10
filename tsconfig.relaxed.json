@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "vueCompilerOptions": {
+    "strictTemplates": false
+  },
+  "compilerOptions": {
+    "skipLibCheck": true,
+    "noImplicitThis": false
+  }
+}

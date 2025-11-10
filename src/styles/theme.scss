@@ -1,0 +1,54 @@
+// 全局主题变量与工具
+// 品牌主色
+$color-primary: #0B3D91;
+$color-primary-rgb: 11 61 145; // 使用空格分隔，便于 rgba 展开
+// 主色衍生
+$color-primary-light: #1565C0; // 渐变/hover 次色
+$color-primary-hover: #0d4fae;
+$color-primary-active: #082f68;
+$color-primary-disabled: rgba($color-primary, 0.45);
+
+// 功能色占位（可后续扩展）
+$color-success: #18a058;
+$color-warning: #f0a020;
+$color-danger: #d03050;
+$color-info: #2080f0;
+
+// 文本/边框/背景基础
+$color-text-primary: #1f2329;
+$color-text-regular: #4e5969;
+$color-text-secondary: #86909c;
+$color-border: #d0d5d9;
+$color-bg-soft: #f5f7fa;
+
+// 渐变与阴影
+$gradient-primary: linear-gradient(135deg, $color-primary, $color-primary-light);
+$shadow-primary: 0 4rpx 20rpx rgba(11, 61, 145, 0.35);
+
+// SCSS Mixin: 主按钮
+@mixin primary-button-base {
+  background: $gradient-primary;
+  color: #fff;
+  border: none;
+  transition: opacity .15s, filter .15s;
+  &:active { opacity: .85; }
+  &.is-loading { opacity: .7; }
+  &:disabled { background: $color-primary-disabled; color: #fff; }
+}
+
+// 通用类：主按钮（适配现有 .primary-btn 引用）
+.primary-btn { @include primary-button-base; }
+
+// 导出 CSS 变量（H5 动态换肤预留）
+:root {
+  --color-primary: #{$color-primary};
+  --color-primary-light: #{$color-primary-light};
+  --gradient-primary: #{$gradient-primary};
+  --color-text-primary: #{$color-text-primary};
+  --color-text-regular: #{$color-text-regular};
+  --color-text-secondary: #{$color-text-secondary};
+}
+
+// 暴露旧变量兼容（如果老代码还引用 $main-color）
+$main-color: $color-primary; // 兼容层
+$linear-color: $gradient-primary; // 兼容层

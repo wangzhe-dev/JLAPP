@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<title></title>
+
+		<!-- 运行在仅通过 Vite base 部署子路径 (/jl-app/) 且 manifest 不再声明 router.base 时，
+			对直接访问 /jl-app/... 的地址进行一次性前置重写，让 uni 内部路由仍以去掉前缀后的路径匹配。 -->
+		<script>
+		(function(){
+			var projectBase = '/jl-app/';
+			// 仅在无 manifest.base 情况下（简易判定：window.__uniConfig 尚未注入且路径带前缀）先行处理
+			if (location.pathname.startsWith(projectBase)) {
+				// 计算去前缀的新路径（保持以 / 开头）
+				var newPath = location.pathname.slice(projectBase.length - 1); // slice(base.length - 1) 让 '/jl-app/' -> '/'
+				if (!newPath.startsWith('/')) newPath = '/' + newPath;
+				// 避免重复执行
+				if (newPath !== location.pathname) {
+					try { history.replaceState(null, '', newPath + location.search + location.hash); } catch(e) { /* ignore */ }
+					console.log('[BASE-REWRITE] from', projectBase, '=>', newPath);
+				}
+			}
+		})();
+		</script>
+
+		<script src="https://unpkg.com/vconsole@latest/dist/vconsole.min.js"></script>
+		<script>
+			var coverSupport = 'CSS' in window && typeof CSS.supports === 'function' && (CSS.supports('top: env(a)') || CSS.supports('top: constant(a)'))
+			document.write('<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0' + (coverSupport ? ', viewport-fit=cover' : '') + '" />')
+
+			// 非生产环境, 则开启控制台
+			if (!window.location.href.includes('static.xxxx.com')) {
+				new window.VConsole()
+			}
+		</script>
+	</head>
+
+	<body>
+		<div id="app"></div>
+		<script type="module" src="/src/main.ts"></script>
+	</body>
+</html>

@@ -1,0 +1,170 @@
+page {
+	width: 100%;
+	height: 100%;
+	background-color: #F6F7F8;
+	font-size: 28rpx;
+	color: #333333;
+}
+
+.container {
+	display: flex;
+	flex-direction: column;
+	width: 100%;
+	position: relative;
+}
+
+view,
+scroll-view,
+swiper,
+button,
+uni-button,
+input,
+textarea,
+label,
+text,
+navigator,
+cover-view,
+cover-image,
+picker,
+picker-view,
+radio,
+radio-group,
+image {
+	box-sizing: border-box;
+}
+
+button, uni-button {
+	line-height: 1.5;
+	font-size: 28rpx;
+	background-color: transparent;
+	position: relative;
+}
+
+button::after, uni-button::after {
+	border: none !important;
+}
+
+// 按钮无法点击的背景色
+.btn-disable {
+	background: #A2BDB9 !important;
+}
+
+.hover-opacity {
+	opacity: 0.5;
+	transition: opacity 0.2s ease-in-out;
+}
+
+/* input 样式 */
+.placeholder-class {
+	font-size: 26rpx;
+	color: #C5C5C5;
+}
+
+/* 隐藏scroll-view的滚动条 */
+::-webkit-scrollbar {
+	display: none;
+	width: 0 !important;  
+	height: 0 !important;  
+	-webkit-appearance: none;  
+	background: transparent;  
+}
+
+/* 文字避头尾法则 */
+.btw {
+	table-layout: fixed;
+	word-wrap: break-word;
+	word-break: normal;
+	text-align: justify;
+	text-justify: inter-ideograph;
+}
+
+.fw-bold {
+	font-weight: bold;
+}
+
+.bg-white {
+	background: #fff;
+}
+
+.hidden {
+	overflow: hidden;
+}
+
+.w100 {
+	width: 100%;
+}
+
+.h100 {
+	height: 100%;
+}
+
+.iphonex-m {
+	margin-bottom: constant(safe-area-inset-bottom);
+	margin-bottom: env(safe-area-inset-bottom);
+}
+
+.iphonex-p {
+	padding-bottom: constant(safe-area-inset-bottom);
+	padding-bottom: env(safe-area-inset-bottom);
+}
+
+// 超出行数，自动显示行尾省略号，最多3行
+@for $i from 1 through 3 {
+	.line-#{$i} {
+		@if $i == '1' {
+			overflow: hidden;
+			white-space: nowrap;
+			text-overflow: ellipsis;
+		} @else {
+			display: -webkit-box!important;
+			overflow: hidden;
+			text-overflow: ellipsis;
+			word-break: break-all;
+			-webkit-line-clamp: $i;
+			-webkit-box-orient: vertical!important;
+		}
+	}
+}
+
+@for $i from 0 through 50 {
+	.fs-#{$i}{
+		font-size: $i  + rpx;
+		uni-view{
+			font-size: $i + rpx;
+		}
+
+		view{
+			font-size: $i  + rpx ;
+		}
+	}
+}
+
+// 定义内外边距，历遍1-100
+@for $i from 0 through 100 {
+	// 得出：m-30
+	.m-#{$i} {
+		margin: $i + rpx;
+	}
+
+	// 得出：p-30
+	.p-#{$i} {
+		padding: $i + rpx;
+	}
+
+	@each $short, $long in l left, t top, r right, b bottom {
+		// 缩写版，结果如： ml-30
+		// 定义外边距
+		.m#{$short}-#{$i} {
+			margin-#{$long}: $i + rpx;
+		}
+
+		// 定义内边距
+		.p#{$short}-#{$i} {
+			padding-#{$long}: $i + rpx;
+		}
+
+		.#{$long}-#{$i} {
+			#{$long}:  $i + rpx;
+		}
+	}
+}

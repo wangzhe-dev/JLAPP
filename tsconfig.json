@@ -1,0 +1,70 @@
+{
+	// 对应 @vue/tsconfig v0.5.1
+	"compilerOptions": {
+		"lib": ["DOM", "DOM.Iterable", "ESNext"],
+		"module": "ESNext",
+		"moduleResolution": "Bundler",
+		"resolveJsonModule": true,
+		"jsx": "preserve",
+		"jsxImportSource": "vue",
+		"noImplicitThis": true,
+		"strict": true,
+		"verbatimModuleSyntax": true,
+		"target": "ESNext",
+		"useDefineForClassFields": true,
+		"esModuleInterop": true,
+		"forceConsistentCasingInFileNames": true,
+		"skipLibCheck": true,
+		"types": [
+			// uni-app + Vue 3 使用 Vite 构建，需要安装 vite
+			"vite/client",
+			// uni API 相关的 TypeScript 类型，需要安装 @dcloudio/types
+			"@dcloudio/types",
+			// my API 相关的 TypeScript 类型，需要安装 @mini-types/alipay
+			"@mini-types/alipay",
+			// wx API 相关的 TypeScript 类型，需要安装 miniprogram-api-typings
+			"miniprogram-api-typings",
+			// 为 uni-app 组件提供 TypeScript 类型，需要安装 @uni-helper/uni-app-types
+			"@uni-helper/uni-app-types",
+			// 为 uni-ui 组件提供 TypeScript 类型，需要安装 @uni-helper/uni-ui-types
+			"@uni-helper/uni-ui-types",
+			// 为 uni-cloud 提供 TypeScript 类型，需要安装 @uni-helper/uni-cloud-types
+			"@uni-helper/uni-cloud-types",
+			// 为 Sard 提供 TypeScript 类型，需要安装 sard-uniapp
+			"sard-uniapp/global",
+			// Node.js 全局变量和模块类型，需要安装 @types/node
+			"@types/node",
+			// Vue 3 核心运行时类型，需要安装 @vue/runtime-core
+			"@vue/runtime-core",
+			// Vue 3 模板编译器类型，需要安装 @vue/compiler-core
+			"@vue/compiler-core"
+		],
+		"baseUrl": ".",
+		"paths": {
+			"@/*": ["./src/*"]
+		},
+		"plugins": [{ "name": "typescript-plugin-css-modules" }]
+	},
+	"vueCompilerOptions": {
+		// 已暂时移除自定义 volar plugins（上述插件与当前 vue-tsc 版本存在兼容问题导致 "plugin is not a function"）
+		// 如后续需要恢复，可再添加 plugins 数组。
+	},
+	"include": [
+		"src/**/*.ts",
+		"src/**/*.d.ts",
+		"src/**/*.tsx",
+		"src/**/*.vue",
+		"src/**/*.js",
+		"src/**/*.jsx",
+		"src/**/*.json",
+		"src/**/*.mjs",
+		"src/**/*.cjs",
+		"src/**/*.mts",
+		"src/**/*.cts",
+		"env.d.ts",
+		"src/types/auto-imports.d.ts",
+		"src/types/components.d.ts",
+		"src/types/uni-global-components.d.ts"
+	],
+	"exclude": ["node_modules", "unpackage", "**/*.nvue"]
+}

@@ -1,0 +1,76 @@
+// ===== 精简全局主题定义（移除 theme.scss 统一方案） =====
+// 主色 / 渐变 / 阴影按需扩展
+$main-color: #0b3d91;
+
+$linear-color: linear-gradient(135deg, #0b3d91, #1565c0);
+
+// 通用主按钮（保持与先前视觉一致）
+.primary-btn {
+	background: $linear-color;
+	color: #fff;
+	border: none;
+	&:active {
+		opacity: 0.85;
+	}
+	&:disabled {
+		opacity: 0.6;
+	}
+}
+.finished {
+	text-align: center;
+	padding: 40rpx 0;
+	color: #999;
+	font-size: 26rpx;
+}
+.finished-block {
+	text-align: center;
+	padding: 40rpx 0;
+	color: #999;
+	font-size: 26rpx;
+}
+// ===== 自定义底部导航覆盖 =====
+@import "@/styles/_tabbar.scss";
+
+// ===== Sard Upload 默认示例样式（对齐官方演示） =====
+page,
+.sar-portal {
+	--sar-upload-preview-width: 176rpx;
+	--sar-upload-preview-height: 176rpx;
+	--sar-upload-preview-gap: 16rpx;
+	--sar-upload-preview-border-radius: var(--sar-rounded);
+	--sar-upload-preview-bg: var(--sar-secondary-bg);
+	--sar-upload-preview-video-bg: var(--sar-black);
+
+	--sar-upload-file-color: var(--sar-body-color);
+	--sar-upload-file-icon-font-size: 40rpx;
+	--sar-upload-file-name-margin-top: 8rpx;
+	--sar-upload-file-name-padding-x: 8rpx;
+	--sar-upload-file-name-font-size: var(--sar-text-sm);
+
+	--sar-upload-status-color: var(--sar-white);
+	--sar-upload-status-bg: var(--sar-mask-illegible);
+	--sar-upload-status-icon-font-size: 40rpx;
+	--sar-upload-status-message-margin-top: 8rpx;
+	--sar-upload-status-message-padding-x: 8rpx;
+	--sar-upload-status-message-font-size: var(--sar-text-sm);
+
+	--sar-upload-close-top: 4rpx;
+	--sar-upload-close-right: 4rpx;
+	--sar-upload-close-size: 40rpx;
+	--sar-upload-close-font-size: var(--sar-text-sm);
+	--sar-upload-close-color: var(--sar-white);
+	--sar-upload-close-bg: var(--sar-mask-illegible);
+
+	--sar-upload-select-width: 176rpx;
+	--sar-upload-select-height: 176rpx;
+	--sar-upload-select-font-size: 48rpx;
+	--sar-upload-select-color: var(--sar-secondary-color);
+	--sar-upload-select-border-radius: var(--sar-rounded);
+	--sar-upload-select-bg: var(--sar-secondary-bg);
+	--sar-upload-select-active-bg: var(--sar-active-deep-bg);
+
+	--sar-upload-video-play-bg: var(--sar-mask-legible);
+	--sar-upload-video-play-color: rgba(var(--sar-white-rgb), 0.8);
+
+	--sar-upload-loading-size: 40rpx;
+}
