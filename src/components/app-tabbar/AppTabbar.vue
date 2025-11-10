@@ -23,7 +23,7 @@
 </template>
 <script lang="ts" setup>
 // @ts-nocheck 暂时关闭严格类型校验，待内置标签类型统一调整后移除此行
-import { computed, withDefaults, defineProps, defineEmits, watch, ref, onMounted, nextTick } from 'vue'
+import { computed, withDefaults, defineProps, defineEmits, watch, ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import type { AppTabItem } from '@/config/tabbar'
 
 const props = withDefaults(defineProps<{
@@ -171,7 +171,7 @@ function normalizePath(path?: string, withSlash = false) {
   return trimmed.startsWith('/') ? trimmed : trimmed
 }
 
-onMounted(() => {
+function updateSafeArea() {
   try {
     const info = uni.getSystemInfoSync()
     const toNumber = (value: any) => {
@@ -199,7 +199,25 @@ onMounted(() => {
       }
     }
     safeAreaBottom.value = bottom
-  } catch {}
+  } catch (error) {
+    console.warn('[AppTabbar] updateSafeArea error:', error)
+  }
+}
+
+onMounted(() => {
+  updateSafeArea()
+
+  // Listen for window resize events (including orientation changes)
+  uni.onWindowResize(() => {
+    updateSafeArea()
+  })
+})
+
+onBeforeUnmount(() => {
+  // Clean up window resize listener
+  uni.offWindowResize(() => {
+    updateSafeArea()
+  })
 })
 </script>
 <style lang="scss" scoped>
