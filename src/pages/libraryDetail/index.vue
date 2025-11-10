@@ -32,6 +32,7 @@ import type { CFormSchema, CFormSchemaField } from "@/components/c-form/types";
 import ImageGrid from "@/components/image-grid/ImageGrid.vue";
 import { findDetailsById } from "@/api/exception";
 import { ensurePicturePreviewUrl } from "@/utils/picture";
+import { formatDateTime } from "@/utils/date";
 
 const loading = ref<boolean>(false);
 const error = ref<string | null>(null);
@@ -164,20 +165,6 @@ function buildFields(): CFormSchemaField[] {
 			slotName: "scenePictures",
 		},
 	];
-}
-
-function formatDateTime(value: any) {
-	if (!value && value !== 0) return "-";
-	if (typeof value === "string" && value.includes("-") && value.length >= 10)
-		return value;
-	const date = new Date(value);
-	if (Number.isNaN(date.getTime())) return String(value ?? "");
-	const pad = (n: number) => (n < 10 ? `0${n}` : `${n}`);
-	return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
-		date.getDate()
-	)} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(
-		date.getSeconds()
-	)}`;
 }
 
 function normalizePictureList(raw: any) {

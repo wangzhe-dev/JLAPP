@@ -38,7 +38,7 @@
 					class="exd-card"
 					:title="item.documentNumber || '-'"
 					:subtitle="item.sourceName || ''"
-					:extra="formatTime(item.createdTime)"
+					:extra="formatDateTime(item.createdTime)"
 					:variant="itemClosed(item) ? 'outline' : 'elevated'"
 					:lines="resolveCardLines(item)"
 					:line-clamp="6"
@@ -114,6 +114,7 @@ import DispatchPopout from "./components/DispatchPopout.vue";
 import CompletePopout from "./components/CompletePopout.vue";
 import EscalatePopout from "./components/EscalatePopout.vue";
 import { formatDate } from "sard-uniapp";
+import { formatDateTime } from "@/utils/date";
 
 import {
 	dispatchException,
@@ -288,12 +289,6 @@ async function request(params: {
 	return { list: records, total };
 }
 
-function formatTime(
-	v?: string | number,
-	formatter = "YYYY-MM-DD HH:mm:ss"
-): string {
-	return v ? formatDate(new Date(v), formatter) : "-";
-}
 function itemClosed(item: any) {
 	// 约定：40/50 等为已处理/完成，根据需要调整
 	const code = Number(item?.documentStatus);
@@ -333,7 +328,7 @@ function resolveCardLines(item: any) {
 	pushLine("呼叫人", item?.createdNameBy || "-");
 	pushLine(
 		"期望解决时间",
-		formatTime(item?.expectedResolutionTime, "YYYY-MM-DD")
+		formatDateTime(item?.expectedResolutionTime, { includeTime: false })
 	);
 
 	const pictureUrl = item?.exceptionPictureUrl;

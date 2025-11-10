@@ -7,6 +7,7 @@
 
 import { ref, watch, computed } from "vue";
 import { formatDate } from "sard-uniapp";
+import { pad } from "@/utils/format";
 
 const props = defineProps<{
 	field: any;
@@ -81,7 +82,6 @@ function formatDateTime(input: any) {
 	const d = input instanceof Date ? input : new Date(input);
 	if (isNaN(d.getTime())) return input;
 
-	const pad = (n: number) => (n < 10 ? "0" + n : "" + n);
 	const type = componentProps.value?.type || "yMdhms";
 	const isDateOnly = type === "yMd" || type === "ymd" || type === "date";
 

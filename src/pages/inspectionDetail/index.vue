@@ -57,6 +57,8 @@ import {
 	getInspectionDetail,
 	getInspectionProcessList,
 } from "@/api/inspection";
+import { formatDateTime } from "@/utils/date";
+import { pad } from "@/utils/format";
 
 const loading = ref(true);
 const detail = ref<any>(null);
@@ -257,23 +259,6 @@ function parseImageList(path: any) {
 		.filter(Boolean);
 }
 
-function formatDateTime(value: any) {
-	if (value === undefined || value === null || value === "") return "-";
-	if (typeof value === "number") return formatDate(new Date(value));
-	if (value instanceof Date) return formatDate(value);
-	const parsed = new Date(String(value).replace(/-/g, "/"));
-	if (isNaN(parsed.getTime())) return String(value);
-	return formatDate(parsed);
-}
-
-function formatDate(date: Date) {
-	const pad = (n: number) => (n < 10 ? `0${n}` : `${n}`);
-	return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
-		date.getDate()
-	)} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(
-		date.getSeconds()
-	)}`;
-}
 
 const PROCESS_STATUS_DICT_CODE = "maintenance_process_order_status_type";
 

@@ -46,7 +46,7 @@
 					class="exl-card"
 					:title="item.title || '-'"
 					:subtitle="item.callPName || ''"
-					:extra="formatTime(item.handleTime)"
+					:extra="formatDateTime(item.handleTime)"
 					:variant="'elevated'"
 					:content="
 						item.exceptionDesc + (item.solution ? '--' + item.solution : '')
@@ -69,6 +69,8 @@ import PullList from "@/components/pull-list/PullList.vue";
 import CCard from "@/components/c-card/CCard.vue";
 // import cSearch from '@/components/c-form/fields/Search.vue';
 import { knowledgeSearch } from "@/api/exception";
+import { formatDateTime } from "@/utils/date";
+import { pad } from "@/utils/format";
 
 const rangeTabs = ref([
 	{ name: "", title: "全部" },
@@ -196,19 +198,6 @@ function viewDetail(item: any) {
 	uni.navigateTo({
 		url: `/pages/libraryDetail/index?id=${encodeURIComponent(id)}`,
 	});
-}
-function formatTime(v?: string | number) {
-	if (v === undefined || v === null || v === "") return "-";
-	const d = new Date(
-		typeof v === "number" || /^\d+$/.test(String(v))
-			? Number(v)
-			: String(v).replace(/-/g, "/")
-	);
-	if (isNaN(d.getTime())) return "-";
-	const pad = (n: number) => (n < 10 ? "0" + n : "" + n);
-	return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(
-		d.getHours()
-	)}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
 async function request(params: {
 	page: number;

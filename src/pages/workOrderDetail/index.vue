@@ -73,6 +73,8 @@ import { queryDictList } from "@/api/dict";
 import { ensurePicturePreviewUrl } from "@/utils/picture";
 import { resolveStatusState } from "@/utils/status";
 import { http } from "@/utils/request";
+import { formatDateTime } from "@/utils/date";
+import { pad } from "@/utils/format";
 function toArray<T>(input: T | T[] | null | undefined): T[] {
 	if (!input) return [];
 	return Array.isArray(input) ? input : [input];
@@ -255,15 +257,6 @@ const schemaRef = computed<CFormSchema>(() => {
 	};
 });
 
-function formatDateTime(value: any) {
-	if (!value && value !== 0) return "-";
-	const date = new Date(value);
-	if (Number.isNaN(date.getTime())) return String(value ?? "-");
-	const pad = (num: number) => (num < 10 ? `0${num}` : `${num}`);
-	return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
-		date.getDate()
-	)} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
 
 function formatRecordTime(value: any) {
 	if (!value) return "-";

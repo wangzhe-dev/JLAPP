@@ -58,6 +58,8 @@ import ChangePartsList from "@/pages/maintainOrder/components/ChangePartsList.vu
 import CCard from "@/components/c-card/CCard.vue";
 import { ensurePicturePreviewUrl } from "@/utils/picture";
 import { getPartsManagementlist, selectPlanOrder } from "@/api/order";
+import { formatDateTime } from "@/utils/date";
+import { pad } from "@/utils/format";
 const sparePartVisible = ref<boolean>(false);
 type BeforeCloseHandler = (
 	type: "confirm" | "cancel" | "close",
@@ -143,7 +145,7 @@ watch(
 			if (isNaN(startDate.getTime())) return;
 
 			const finishDate = new Date(startDate.getTime() + minutes * 60 * 1000);
-			formModel.value.finishTime = formatDateTimeString(finishDate);
+			formModel.value.finishTime = formatDateTime(finishDate);
 		} catch (error) {
 			console.warn("[UpkeepPopout] 计算完成时间失败", error);
 		}
@@ -164,28 +166,20 @@ watch(
 			if (isNaN(startDate.getTime())) return;
 
 			const finishDate = new Date(startDate.getTime() + minutes * 60 * 1000);
-			formModel.value.finishTime = formatDateTimeString(finishDate);
+			formModel.value.finishTime = formatDateTime(finishDate);
 		} catch (error) {
 			console.warn("[UpkeepPopout] 计算完成时间失败", error);
 		}
 	}
 );
 
-function formatDateTimeString(date: Date): string {
-	const pad = (n: number) => (n < 10 ? `0${n}` : `${n}`);
-	return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
-		date.getDate()
-	)} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(
-		date.getSeconds()
-	)}`;
-}
 
 function resetForm() {
 	const now = new Date();
 	const defaultHour = defaultActualHour.value;
 	console.log(defaultHour, "defaultActualHour.value");
 
-	const startTimeStr = formatDateTimeString(now);
+	const startTimeStr = formatDateTime(now);
 	let finishTimeStr = "";
 
 	// 如果有默认工时，计算完成时间
@@ -193,7 +187,7 @@ function resetForm() {
 		const minutes = Number(defaultHour) || 0;
 		if (minutes > 0) {
 			const finishDate = new Date(now.getTime() + minutes * 60 * 1000);
-			finishTimeStr = formatDateTimeString(finishDate);
+			finishTimeStr = formatDateTime(finishDate);
 		}
 	}
 

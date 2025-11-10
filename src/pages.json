@@ -24,8 +24,6 @@
 		{ "path": "pages/libraryDetail/index", "style": { "navigationBarTitleText": "库存详情" } },
 		{ "path": "pages/maintainOrder/index", "style": { "navigationBarTitleText": "维保工单" } },
 		{ "path": "pages/orderList/index", "style": { "navigationBarTitleText": "工单列表" } },
-		// { "path": "pages/quality/qualityTest/index", "style": { "navigationBarTitleText": "质量检测" } },
-		// { "path": "pages/quality/qualityjdList/index", "style": { "navigationBarTitleText": "精度检测" } },
 		{ "path": "pages/quality/qualitytsList/index", "style": { "navigationBarTitleText": "探伤检测" } },
 		{ "path": "pages/quality/qualityFill", "style": { "navigationBarTitleText": "质检填报" } },
 		{ "path": "pages/quality/jdFill", "style": { "navigationBarTitleText": "质检填报" } },

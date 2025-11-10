@@ -33,6 +33,8 @@ import CCard from "@/components/c-card/CCard.vue";
 import { selectPlanOrder } from "@/api/order";
 import { queryDictList } from "@/api/dict";
 import { resolveStatusState } from "@/utils/status";
+import { formatDateTime } from "@/utils/date";
+import { pad } from "@/utils/format";
 
 const loading = ref(true);
 const formData = ref<Record<string, any>>({});
@@ -315,15 +317,6 @@ function hasAnyEquipmentInfo() {
 	);
 }
 
-function formatDateTime(value: any) {
-	if (!value && value !== 0) return "-";
-	const date = new Date(value);
-	if (Number.isNaN(date.getTime())) return String(value);
-	const pad = (n: number) => (n < 10 ? `0${n}` : `${n}`);
-	return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
-		date.getDate()
-	)} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
 </script>
 
 <style scoped lang="scss">

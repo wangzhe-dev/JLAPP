@@ -118,6 +118,8 @@ import { requestUrl } from "@/config";
 import { buildRepairFormFields } from "./repairFormSchema";
 import type { OptionItem } from "./repairFormSchema";
 import { isH5 } from "@/utils/platform";
+import { formatDateTime } from "@/utils/date";
+import { pad } from "@/utils/format";
 
 function toArray<T>(input: T | T[] | null | undefined): T[] {
 	if (!input) return [];
@@ -166,19 +168,6 @@ function normalizeImagePathList(input: any): string {
 	return urls.join(",");
 }
 
-function formatDateTime(value: any) {
-	if (!value && value !== 0) return "";
-	if (typeof value === "string" && /\d{4}-\d{2}-\d{2}/.test(value))
-		return value;
-	const date = new Date(value);
-	if (Number.isNaN(date.getTime())) return String(value ?? "");
-	const pad = (num: number) => (num < 10 ? `0${num}` : `${num}`);
-	return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
-		date.getDate()
-	)} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(
-		date.getSeconds()
-	)}`;
-}
 
 const isPcClient = isH5();
 
