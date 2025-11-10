@@ -1,5 +1,4 @@
 <script lang="ts" setup>
-// @ts-nocheck
 import { ref, reactive, watch, provide, useSlots, computed } from "vue";
 import * as FieldComponents from "./fields";
 import { resolvePresets } from "./presets";
@@ -19,6 +18,9 @@ import type {
 	CFormSchemaField,
 	CFormExpose,
 	InternalFieldState,
+	OptionItem,
+	FormRefType,
+	CFormRule,
 } from "./types";
 const props = defineProps<{
 	schema: CFormSchema;
@@ -53,7 +55,7 @@ const {
 	shouldWrapSlotField,
 } = useFormState(props, emits, emitModel);
 
-const formRef = ref<any>();
+const formRef = ref<FormRefType>();
 
 // 使用验证逻辑Hook
 const { validate, validateDetail, clearValidate } = useFormValidation(
@@ -73,7 +75,7 @@ const {
 	refreshOptions,
 } = useFormOptions(props, fieldStates, fieldOptionsStore, isSlotField);
 
-const rules = ref<Record<string, any[]>>({});
+const rules = ref<Record<string, CFormRule[]>>({});
 const slots = useSlots();
 const hasActionsSlot = computed(() => Boolean(slots.actions));
 const hasBodySlot = computed(() => Boolean(slots.body));
@@ -106,15 +108,17 @@ const typeMap: Record<string, string> = {
 
 // ==== 字段配置规范化（支持 groupTitle）====
 let __autoGroupSeq = 0;
-props.schema.fields.forEach((f: any) => {
-	if (f.groupTitle && !f.component) f.component = "GroupTitle";
-	if (f.component === "GroupTitle" && !f.prop)
-		f.prop = `_g_${__autoGroupSeq++}`;
-	if (!f.component && f.type) {
-		const mapped = typeMap[f.type.toLowerCase?.()] || typeMap[f.type];
-		if (mapped) (f as any).component = mapped as any;
+props.schema.fields.forEach((f) => {
+	// 类型规范化：运行时修改field配置
+	const field = f as CFormSchemaField & { component?: string; prop?: string };
+	if (field.groupTitle && !field.component) field.component = "GroupTitle";
+	if (field.component === "GroupTitle" && !field.prop)
+		field.prop = `_g_${__autoGroupSeq++}`;
+	if (!field.component && field.type) {
+		const mapped = typeMap[field.type.toLowerCase?.()] || typeMap[field.type];
+		if (mapped) field.component = mapped;
 	}
-	if (f.dict && !f.component) (f as any).component = "Dict";
+	if (field.dict && !field.component) field.component = "Dict";
 });
 
 // errorBanner 逻辑已移除：统一使用内置校验滚动与用户自定义 errorDisplay 方式
@@ -123,10 +127,10 @@ function getInlineError(_prop: string) {
 }
 
 function buildRules() {
-	const out: Record<string, any[]> = {};
-	props.schema.fields.forEach((f: any) => {
+	const out: Record<string, CFormRule[]> = {};
+	props.schema.fields.forEach((f) => {
 		if (f.component === "GroupTitle" || isSlotField(f)) return; // 跳过标题及插槽字段
-		const arr: any[] = [];
+		const arr: CFormRule[] = [];
 		if (f.required)
 			arr.push({
 				required: true,
@@ -232,7 +236,7 @@ function isFieldVisible(f: CFormSchemaField) {
 	else if (typeof f.visible === "boolean") base = f.visible;
 	if (base && f.showWhen) {
 		for (const key in f.showWhen) {
-			const expect = (f as any).showWhen[key];
+			const expect = f.showWhen[key];
 			const actual = getModelValueByProp(props.modelValue, key);
 			if (Array.isArray(expect)) {
 				if (!expect.includes(actual)) return false;
@@ -267,39 +271,41 @@ function isFieldReadonly(f: CFormSchemaField) {
 	return !!(local ?? global);
 }
 
-function resolveOptionLabel(option: any) {
+function resolveOptionLabel(option: OptionItem | string | number | null | undefined): string {
 	if (option == null) return "";
 	if (typeof option === "string" || typeof option === "number")
 		return String(option);
+	// OptionItem或任意对象
+	const opt = option as Record<string, any>;
 	return (
-		option.label ??
-		option.text ??
-		option.name ??
-		option.title ??
-		option.value ??
+		opt.label ??
+		opt.text ??
+		opt.name ??
+		opt.title ??
+		opt.value ??
 		""
 	);
 }
 
-function matchOptionLabel(options: any[], value: any) {
+function matchOptionLabel(options: (OptionItem | string | number)[], value: unknown): string | undefined {
 	if (!Array.isArray(options) || !options.length) return undefined;
-	const target = options.find((opt: any) => {
+	const target = options.find((opt) => {
 		const val =
 			typeof opt === "object"
-				? opt.value ?? opt.id ?? opt.key ?? opt.code ?? opt
+				? (opt as Record<string, any>).value ?? (opt as Record<string, any>).id ?? (opt as Record<string, any>).key ?? (opt as Record<string, any>).code ?? opt
 				: opt;
 		if (val === value) return true;
 		if (typeof value === "string") {
-			const label = resolveOptionLabel(opt);
+			const label = resolveOptionLabel(opt as OptionItem);
 			if (label === value) return true;
 		}
 		return false;
 	});
 	if (target === undefined) return undefined;
-	return resolveOptionLabel(target);
+	return resolveOptionLabel(target as OptionItem);
 }
 
-function formatArrayValue(field: CFormSchemaField, value: any[]) {
+function formatArrayValue(field: CFormSchemaField, value: unknown[]): string {
 	const options = getOptions(field);
 	const labels = value
 		.map((val) => {
@@ -321,7 +327,7 @@ function formatDisplayValue(field: CFormSchemaField) {
 	const placeholder =
 		(field.componentProps &&
 			typeof field.componentProps === "object" &&
-			(field.componentProps as any).emptyText) ||
+			(field.componentProps as Record<string, any>).emptyText) ||
 		props.schema?.readonlyPlaceholder ||
 		"-";
 
@@ -423,8 +429,8 @@ function resolveFieldComponent(field: CFormSchemaField) {
 		RadioGroup: "FieldRadioGroup",
 	};
 	const local = compMap[field.component];
-	if (local && (FieldComponents as any)[local])
-		return (FieldComponents as any)[local];
+	if (local && (FieldComponents as Record<string, any>)[local])
+		return (FieldComponents as Record<string, any>)[local];
 	if (getFormComponent(field.component))
 		return getFormComponent(field.component)?.(field, {
 			setValue,
@@ -438,17 +444,17 @@ function buildFieldProps(
 	overrides?: {
 		disabled?: boolean;
 		readonly?: boolean;
-		setValue?: (value: any) => void;
+		setValue?: (value: unknown) => void;
 	}
 ) {
 	const state = getFieldState(field.prop);
 	// 事件回调需要访问实时 model，可在运行期附加一个非响应引用（不影响序列化）
-	(field as any).model = props.modelValue;
+	(field as CFormSchemaField & { model?: Record<string, any> }).model = props.modelValue;
 	const disabled = overrides?.disabled ?? isFieldDisabled(field);
 	const readonly = overrides?.readonly ?? isFieldReadonly(field);
 	const setter = overrides?.setValue
 		? overrides.setValue
-		: (v: any) => {
+		: (v: unknown) => {
 				if (!readonly && !disabled) setValue(field.prop, v);
 		  };
 	return {
@@ -517,10 +523,9 @@ function getGroupTitleStyle(field: CFormSchemaField) {
 function handleResetClick() {
 	if (props.schema.resetBehavior === "back") {
 		try {
-			// @ts-ignore
-			if (typeof uni?.navigateBack === "function") {
-				// @ts-ignore
-				uni.navigateBack();
+			// uni-app全局对象，运行时可用
+			if (typeof (globalThis as any).uni?.navigateBack === "function") {
+				(globalThis as any).uni.navigateBack();
 				return;
 			}
 		} catch (e) {}
@@ -532,7 +537,6 @@ function handleResetClick() {
 }
 
 // Expose
-// @ts-ignore
 defineExpose(exposeObj);
 </script>
 
