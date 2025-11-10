@@ -43,6 +43,7 @@ import type {
 import CCard from "@/components/c-card/CCard.vue";
 import { ensurePicturePreviewUrl } from "@/utils/picture";
 import { getRepairMessage } from "@/api/order";
+import { pad } from "@/utils/format";
 
 type ApproveOption = {
 	label: string;
@@ -218,7 +219,6 @@ function formatRecordTime(value: any) {
 	if (!value && value !== 0) return "-";
 	const date = new Date(value);
 	if (Number.isNaN(date.getTime())) return String(value ?? "-");
-	const pad = (num: number) => (num < 10 ? `0${num}` : `${num}`);
 	return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
 		date.getDate()
 	)} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(

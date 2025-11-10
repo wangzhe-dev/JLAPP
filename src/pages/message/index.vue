@@ -88,6 +88,7 @@ import CCard from "@/components/c-card/CCard.vue";
 import { useUserStore } from "@/stores/user";
 import { http } from "@/utils/request";
 import { EP } from "@/api/endpoints";
+import { pad } from "@/utils/format";
 
 // ===== Tabs 配置 =====
 // 统一使用字符串 name，避免与 CTabs 默认 numeric 0 造成首次不匹配
@@ -222,7 +223,6 @@ function formatTime(v?: string | number | Date) {
 }
 
 function formatDate(d: Date) {
-  const pad = (n: number) => (n < 10 ? `0${n}` : `${n}`);
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(
     d.getHours()
   )}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;

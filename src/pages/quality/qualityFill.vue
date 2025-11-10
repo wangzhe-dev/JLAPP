@@ -162,6 +162,7 @@ import { queryDictList as queryDictListBatch } from "@/api/dict";
 import { useUserStore } from "@/stores/user";
 import { storage } from "@/utils/storage";
 import _ from "lodash";
+import { pad } from "@/utils/format";
 
 interface QualityRecord {
   id?: string;
@@ -696,7 +697,6 @@ function formatDateForDisplay(input: any) {
   }
   const d = new Date(input);
   if (Number.isNaN(d.getTime())) return "";
-  const pad = (n: number) => (n < 10 ? `0${n}` : `${n}`);
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 

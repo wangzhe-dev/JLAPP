@@ -67,6 +67,7 @@ import { CForm } from "@/components/c-form";
 import CCard from "@/components/c-card/CCard.vue";
 import type { CFormSchema } from "@/components/c-form/types";
 import { WORK_ORDER_PICK_RESULT_CACHE_KEY } from "@/utils/picker";
+import { pad } from "@/utils/format";
 
 // ====== 表单基础状态 ======
 // form 内部约定：_mode: 'create' | 'edit' | 'view'; _locks: Record<string,1>
@@ -504,7 +505,6 @@ function normalizeDateTime(value: any) {
 		return value;
 	const d = new Date(value);
 	if (isNaN(d.getTime())) return value;
-	const pad = (n: number) => (n < 10 ? "0" + n : "" + n);
 	return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(
 		d.getHours()
 	)}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
