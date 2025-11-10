@@ -13,6 +13,7 @@ import {
 } from "./utils/fieldHelpers";
 import { useFormState } from "./core/useFormState";
 import { useFormValidation } from "./core/useFormValidation";
+import { useFormWatch } from "./core/useFormWatch";
 import type {
 	CFormSchema,
 	CFormSchemaField,
@@ -260,56 +261,6 @@ function isFieldReadonly(f: CFormSchemaField) {
 	return !!(local ?? global);
 }
 
-// 依赖字段监听（异步选项或级联）
-props.schema.fields.forEach((f) => {
-	if (isSlotField(f)) return;
-	if (f.cascadeTo?.length) {
-		f.cascadeTo.forEach((childProp) => {
-			watch(
-				() => fieldStates[f.prop]?.value,
-				(newVal, oldVal) => {
-					if (newVal === oldVal || oldVal === undefined) return;
-					const childField = props.schema.fields.find(
-						(ff) => ff.prop === childProp
-					);
-					if (childField) {
-						setValue(childField.prop, undefined);
-						loadAsyncOptions(childField);
-					}
-				}
-			);
-		});
-	}
-	if (f.asyncOptions?.dependOn?.length) {
-		f.asyncOptions.dependOn.forEach((dep) => {
-			watch(
-				() => fieldStates[dep]?.value,
-				(newVal, oldVal) => {
-					if (newVal === oldVal || oldVal === undefined) return;
-					if (f.clearOnDependChange) setValue(f.prop, undefined);
-					loadAsyncOptions(f);
-				}
-			);
-		});
-	}
-});
-
-// 监听 visible 变化：当一个字段由可见 -> 不可见 并且配置 clearWhenHidden 则清空其值
-props.schema.fields.forEach((f) => {
-	if (isSlotField(f)) return;
-	if (f.visible || f.clearWhenHidden) {
-		watch(
-			() => isFieldVisible(f),
-			(visible, prev) => {
-				if (prev === true && visible === false && f.clearWhenHidden) {
-					setValue(f.prop, undefined);
-				}
-			},
-			{ immediate: false }
-		);
-	}
-});
-
 function getOptions(field: CFormSchemaField) {
 	// 若字段原生 options 是函数（动态计算），直接调用，不缓存
 	if (typeof field.options === "function") {
@@ -527,6 +478,16 @@ props.schema.fields.forEach((f) => {
 		}
 	});
 })();
+
+// 批量Watch设置（级联、异步选项依赖、可见性变化）
+useFormWatch(
+	props.schema,
+	fieldStates,
+	setValue,
+	loadAsyncOptions,
+	isFieldVisible,
+	isSlotField
+);
 
 async function refreshOptions(propsList?: string[]) {
 	const targets = propsList
