@@ -475,13 +475,29 @@ async function handleEscalateBeforeClose(payload?: {
 	noticeContent: string;
 	noticeType: string[];
 }) {
+	// 验证EDC编码
+	if (!payload?.handleEdcCode?.trim()) {
+		uni.showToast({ title: "EDC编码无效，请重新选择人员", icon: "none" });
+		return false;
+	}
+
+	// 验证通知方式
+	const noticeTypeStr = Array.isArray(payload.noticeType)
+		? payload.noticeType.filter(t => t?.trim()).join(",")
+		: "";
+
+	if (!noticeTypeStr) {
+		uni.showToast({ title: "请选择通知方式", icon: "none" });
+		return false;
+	}
+
 	escalateSubmitting.value = true;
 	uni.showLoading({ title: "提交中...", mask: true });
 
 	try {
 		await escalateException({
 			...payload,
-			noticeType: payload.noticeType.join(","),
+			noticeType: noticeTypeStr,
 		});
 		uni.showToast({ title: "已升级", icon: "success" });
 		escalatePopoutVisible.value = false;
@@ -698,13 +714,30 @@ async function handleTransferBeforeClose(payload?: {
 	handleP: string;
 	handlePName: string;
 	handleEdcCode: string;
+	noticeType: string[];
 }) {
+	// 验证EDC编码
+	if (!payload?.handleEdcCode?.trim()) {
+		uni.showToast({ title: "EDC编码无效，请重新选择人员", icon: "none" });
+		return false;
+	}
+
+	// 验证通知方式
+	const noticeTypeStr = Array.isArray(payload.noticeType)
+		? payload.noticeType.filter(t => t?.trim()).join(",")
+		: "";
+
+	if (!noticeTypeStr) {
+		uni.showToast({ title: "请选择通知方式", icon: "none" });
+		return false;
+	}
+
 	const id = payload?.id ? String(payload.id).trim() : "";
 	uni.showLoading({ title: "提交中...", mask: true });
 	try {
 		await reassignException({
 			...payload,
-			noticeType: payload.noticeType.join(","),
+			noticeType: noticeTypeStr,
 		});
 		uni.showToast({ title: "已转派", icon: "success" });
 		transferPopoutVisible.value = false;
