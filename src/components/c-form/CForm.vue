@@ -1,7 +1,6 @@
 <script lang="ts" setup>
 // @ts-nocheck
 import { ref, reactive, watch, provide, useSlots, computed } from "vue";
-import { fetchDict } from "./dict";
 import * as FieldComponents from "./fields";
 import { resolvePresets } from "./presets";
 import { getFormComponent } from "./registry";
@@ -14,6 +13,7 @@ import {
 import { useFormState } from "./core/useFormState";
 import { useFormValidation } from "./core/useFormValidation";
 import { useFormWatch } from "./core/useFormWatch";
+import { useFormOptions } from "./core/useFormOptions";
 import type {
 	CFormSchema,
 	CFormSchemaField,
@@ -62,6 +62,17 @@ const { validate, validateDetail, clearValidate } = useFormValidation(
 	fieldStates,
 	emits
 );
+
+// 使用选项管理Hook
+const {
+	asyncOptionCache,
+	getOptions,
+	loadAsyncOptions,
+	loadDict,
+	initializeOptions,
+	refreshOptions,
+} = useFormOptions(props, fieldStates, fieldOptionsStore, isSlotField);
+
 const rules = ref<Record<string, any[]>>({});
 const slots = useSlots();
 const hasActionsSlot = computed(() => Boolean(slots.actions));
@@ -71,11 +82,6 @@ const shouldShowActions = computed(() => {
 	if (props.schema.readonly && !hasActionsSlot.value) return false;
 	return true;
 });
-
-// 选项缓存（key: field.prop）
-const asyncOptionCache: Record<string, { ts: number; data: any[] }> = reactive(
-	{}
-);
 
 // 规范化：根据简写 type 映射到 component（仅一次）
 const typeMap: Record<string, string> = {
@@ -261,24 +267,6 @@ function isFieldReadonly(f: CFormSchemaField) {
 	return !!(local ?? global);
 }
 
-function getOptions(field: CFormSchemaField) {
-	// 若字段原生 options 是函数（动态计算），直接调用，不缓存
-	if (typeof field.options === "function") {
-		try {
-			return (
-				field.options({
-					model: props.modelValue,
-					values: props.modelValue,
-					field,
-				}) || []
-			);
-		} catch (e) {
-			return [];
-		}
-	}
-	return fieldOptionsStore[field.prop] || [];
-}
-
 function resolveOptionLabel(option: any) {
 	if (option == null) return "";
 	if (typeof option === "string" || typeof option === "number")
@@ -371,101 +359,10 @@ function formatDisplayValue(field: CFormSchemaField) {
 	return String(rawValue);
 }
 
-async function loadAsyncOptions(field: CFormSchemaField, force = false) {
-	if (!field.asyncOptions) return;
-	if (field.asyncOptions.lazy && !field.asyncOptions.immediate) {
-		// 懒加载：由字段点击时触发，这里直接返回（除非 force 指定刷新）
-		if (!force) return;
-	}
-	const {
-		api,
-		cache,
-		transform,
-		labelKey = "label",
-		valueKey = "value",
-	} = field.asyncOptions;
-	const cacheItem = asyncOptionCache[field.prop];
-	const now = Date.now();
-	if (!force && cache) {
-		const ttl = cache === true ? 0 : cache; // true 表示 session 缓存（不判断过期）
-		if (cacheItem && (ttl === 0 || now - cacheItem.ts < ttl)) {
-			fieldOptionsStore[field.prop] = cacheItem.data;
-			return;
-		}
-	}
-	try {
-		const dependValues: Record<string, any> = {};
-		field.asyncOptions.dependOn?.forEach((d) => {
-			dependValues[d] = fieldStates[d]?.value;
-		});
-		const raw = await api(dependValues, field);
-		let list = transform ? transform(raw) : raw;
-		// 标准化为 {label,value}
-		if (Array.isArray(list) && list.length && typeof list[0] === "object") {
-			list = list.map((it: any) => ({
-				label: it[labelKey],
-				value: it[valueKey],
-				raw: it,
-			}));
-		}
-		fieldOptionsStore[field.prop] = list;
-		if (cache) asyncOptionCache[field.prop] = { ts: now, data: list };
-	} catch (e) {
-		// 失败不抛出，保持静默
-	}
-}
+// 初始化选项加载（immediate选项和编辑场景lazy选项回显）
+initializeOptions();
 
-async function loadDict(field: CFormSchemaField, force = false) {
-	if (!field.dict) return;
-	let cfg: any =
-		typeof field.dict === "string"
-			? { type: field.dict, immediate: true }
-			: field.dict;
-	const { type, cache, labelKey, valueKey, transform, immediate = true } = cfg;
-	if (!immediate && !field.options) return;
-	try {
-		const list = await fetchDict(type, {
-			cache,
-			labelKey,
-			valueKey,
-			transform,
-		});
-		if (
-			force ||
-			!fieldOptionsStore[field.prop] ||
-			!fieldOptionsStore[field.prop].length
-		)
-			fieldOptionsStore[field.prop] = list;
-	} catch (e) {}
-}
-
-// 初始需要 immediate 的字典 / 异步字段加载
-props.schema.fields.forEach((f) => {
-	if (isSlotField(f)) return;
-	if (f.dict) loadDict(f);
-	if (f.asyncOptions?.immediate) loadAsyncOptions(f, true);
-});
-
-// 编辑/查看场景回显：若字段已经有值，但其选项是 lazy（未立即加载），需要强制加载一次以便显示 label
-props.schema.fields.forEach((f) => {
-	if (isSlotField(f)) return;
-	const currentVal = getModelValueByProp(props.modelValue, f.prop);
-	if (currentVal !== undefined && currentVal !== null && currentVal !== "") {
-		// 异步 lazy 且 immediate 为 false -> 强制拉取一次（force=true 跳过缓存）
-		if (
-			f.asyncOptions &&
-			(f.asyncOptions.lazy || f.asyncOptions.immediate === false)
-		) {
-			loadAsyncOptions(f, true);
-		}
-		// 字典：若 dict.immediate === false 但已有值，需要加载字典项
-		if (f.dict && typeof f.dict === "object" && f.dict.immediate === false) {
-			loadDict(f);
-		}
-	}
-});
-
-// 初始：对被 showWhen/visible 判定为隐藏且设置 clearWhenHidden 的字段清空一次，适用于“编辑/详情”载入旧数据但当前条件不满足的场景
+// 初始：对被 showWhen/visible 判定为隐藏且设置 clearWhenHidden 的字段清空一次，适用于"编辑/详情"载入旧数据但当前条件不满足的场景
 (function initialVisibilityCleanup() {
 	props.schema.fields.forEach((f) => {
 		if (isSlotField(f)) return;
@@ -488,16 +385,6 @@ useFormWatch(
 	isFieldVisible,
 	isSlotField
 );
-
-async function refreshOptions(propsList?: string[]) {
-	const targets = propsList
-		? props.schema.fields.filter((f) => propsList.includes(f.prop))
-		: props.schema.fields;
-	for (const f of targets) {
-		if (f.dict) await loadDict(f);
-		if (f.asyncOptions) await loadAsyncOptions(f);
-	}
-}
 
 const exposeObj: CFormExpose = {
 	validate,
