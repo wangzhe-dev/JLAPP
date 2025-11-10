@@ -24,6 +24,7 @@ import { commitCheckMission } from "@/api/inspection";
 import { queryDictList as queryDictListBatch } from "@/api/dict";
 import { resolveStatusState } from "@/utils/status";
 import { formatDateTime, formatDateYMD } from "@/utils/date";
+import { buildUrl } from "@/utils/url";
 
 const tabs = [
 	{ name: "a", title: "维修工单" },
@@ -296,21 +297,6 @@ export function useOrderList() {
 			key,
 			JSON.stringify({ name: entry.name, value: persistValue })
 		);
-	}
-
-	function buildUrl(path: string, params: Record<string, any> = {}) {
-		const query = Object.keys(params)
-			.filter(
-				(key) =>
-					params[key] !== undefined &&
-					params[key] !== null &&
-					params[key] !== ""
-			)
-			.map(
-				(key) => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`
-			)
-			.join("&");
-		return query ? `${path}?${query}` : path;
 	}
 
 	function updateQueryTypeByTab() {
@@ -847,7 +833,7 @@ export function useOrderList() {
 			mtNo: item?.mtNo ?? "",
 			eqCode: item?.equipmentCode ?? "",
 			eqName: item?.equipmentName ?? "",
-		});
+		}, { skipEmpty: true });
 		uni.navigateTo({ url });
 	}
 	// 保养确定
@@ -915,7 +901,7 @@ export function useOrderList() {
 			id: String(orderId),
 			source: source.value,
 			mode: "repair",
-		});
+		}, { skipEmpty: true });
 		uni.navigateTo({ url });
 	}
 
@@ -930,14 +916,14 @@ export function useOrderList() {
 			const url = buildUrl("/pages/workOrderDetail/index", {
 				id: item?.id ?? "",
 				source: source.value,
-			});
+			}, { skipEmpty: true });
 			uni.navigateTo({ url });
 			return;
 		}
 		if (activeTabName.value === "b") {
 			const url = buildUrl("/pages/upkeepOrderDetail/index", {
 				id: item?.id ?? "",
-			});
+			}, { skipEmpty: true });
 			uni.navigateTo({ url });
 			return;
 		}
@@ -947,7 +933,7 @@ export function useOrderList() {
 			source: source.value,
 			equipmentModel: item?.equipmentModel ?? "",
 			isView: "1",
-		});
+		}, { skipEmpty: true });
 		uni.navigateTo({ url });
 	}
 
