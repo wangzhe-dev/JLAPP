@@ -88,7 +88,6 @@ const visible = computed({
 	get: () => !!props.visible,
 	set: (value) => emit("update:visible", value),
 });
-const formRef = ref<CFormExpose | null>(null);
 const formModel = ref<TextareaPopoutForm>({
 	auditingSuggest: "",
 	approvalResult: "5",
@@ -318,7 +317,7 @@ async function handleBeforeClose(type: "confirm" | "cancel" | "close") {
 	if (type !== "confirm") {
 		return true;
 	}
-	const form = formRef.value;
+	const form = cFormRef.value;
 	if (form?.validate) {
 		const ok = await form.validate();
 		if (!ok) return false;

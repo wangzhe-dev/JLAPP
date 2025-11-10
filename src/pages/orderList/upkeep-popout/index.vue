@@ -101,7 +101,6 @@ const visible = computed({
 	get: () => !!props.visible,
 	set: (value) => emit("update:visible", value),
 });
-const formRef = ref<CFormExpose | null>(null);
 const formModel = ref<TextareaPopoutForm>({
 	actualHour: "",
 	startTime: "",
