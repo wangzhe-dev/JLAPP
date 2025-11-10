@@ -11,6 +11,7 @@ import {
 	setModelValueByProp,
 	resolveFieldName,
 } from "./utils/fieldHelpers";
+import { useFormState } from "./core/useFormState";
 import type {
 	CFormSchema,
 	CFormSchemaField,
@@ -28,8 +29,28 @@ const emits = defineEmits<{
 	(e: "change", prop: string, value: any): void;
 	(e: "validated", ok: boolean): void;
 }>();
-const fieldStates: Record<string, InternalFieldState> = reactive({});
-const fieldOptionsStore: Record<string, any[]> = reactive({});
+
+// 模型更新触发函数
+function emitModel() {
+	emits("update:modelValue", { ...props.modelValue });
+}
+
+// 使用状态管理Hook
+const {
+	fieldStates,
+	fieldOptionsStore,
+	initialSnapshot,
+	ensureFieldState,
+	getValue,
+	getValues,
+	setValue,
+	setFieldValue,
+	reset,
+	hasFieldValue,
+	isSlotField,
+	shouldWrapSlotField,
+} = useFormState(props, emits, emitModel);
+
 const formRef = ref<any>();
 const rules = ref<Record<string, any[]>>({});
 const slots = useSlots();
@@ -40,22 +61,11 @@ const shouldShowActions = computed(() => {
 	if (props.schema.readonly && !hasActionsSlot.value) return false;
 	return true;
 });
-const initialSnapshot: Record<string, any> = {};
+
 // 选项缓存（key: field.prop）
 const asyncOptionCache: Record<string, { ts: number; data: any[] }> = reactive(
 	{}
 );
-
-function ensureFieldState(prop: string): InternalFieldState {
-	if (!fieldStates[prop])
-		fieldStates[prop] = reactive({
-			value: undefined,
-			errors: [],
-			validating: false,
-			touched: false,
-		}) as InternalFieldState;
-	return fieldStates[prop];
-}
 
 // 规范化：根据简写 type 映射到 component（仅一次）
 const typeMap: Record<string, string> = {
@@ -78,18 +88,7 @@ const typeMap: Record<string, string> = {
 	"dispatch-person": "DispatchPerson",
 };
 
-function isSlotField(field: CFormSchemaField) {
-	return field?.component === "Slot" || !!(field as any)?.slotName;
-}
-
-function shouldWrapSlotField(field: CFormSchemaField) {
-	if (!isSlotField(field)) return false;
-	if (field.slotFormItem === true) return true;
-	if (field.slotFormItem === false) return false;
-	return typeof field.label === "string" && field.label.trim().length > 0;
-}
-
-// ==== 初始化字段（支持 groupTitle）====
+// ==== 字段配置规范化（支持 groupTitle）====
 let __autoGroupSeq = 0;
 props.schema.fields.forEach((f: any) => {
 	if (f.groupTitle && !f.component) f.component = "GroupTitle";
@@ -100,33 +99,6 @@ props.schema.fields.forEach((f: any) => {
 		if (mapped) (f as any).component = mapped as any;
 	}
 	if (f.dict && !f.component) (f as any).component = "Dict";
-	if (f.component === "GroupTitle" || isSlotField(f)) return; // 分组/Slot 不做值初始化
-	fieldOptionsStore[f.prop] = Array.isArray(f.options) ? f.options : [];
-	const st = ensureFieldState(f.prop);
-	const currentValue = getModelValueByProp(props.modelValue, f.prop);
-	// 当前值为 undefined/null/空字符串 且有 defaultValue 时，使用默认值
-	const shouldUseDefault =
-		(currentValue === undefined ||
-			currentValue === null ||
-			currentValue === "") &&
-		f.defaultValue !== undefined;
-
-	if (shouldUseDefault) {
-		// 支持函数形式的 defaultValue
-		const resolvedDefault =
-			typeof f.defaultValue === "function"
-				? f.defaultValue({ field: f, model: props.modelValue })
-				: f.defaultValue;
-		st.value =
-			typeof f.transformIn === "function"
-				? f.transformIn(resolvedDefault, props.modelValue)
-				: resolvedDefault;
-		setModelValueByProp(props.modelValue, f.prop, st.value);
-	} else {
-		st.value = currentValue;
-	}
-
-	initialSnapshot[f.prop] = st.value;
 });
 
 // errorBanner 逻辑已移除：统一使用内置校验滚动与用户自定义 errorDisplay 方式
@@ -246,26 +218,6 @@ async function validate(propsList?: string[]) {
 	return (await validateDetail(propsList)).ok;
 }
 
-function reset(propsList?: string[]) {
-	const targets = propsList
-		? props.schema.fields.filter((f) => propsList.includes(f.prop))
-		: props.schema.fields;
-	targets.forEach((f) => {
-		const st = ensureFieldState(f.prop);
-		// 支持函数形式的 defaultValue
-		const resolvedDefault =
-			f.defaultValue !== undefined
-				? typeof f.defaultValue === "function"
-					? f.defaultValue({ field: f, model: props.modelValue })
-					: f.defaultValue
-				: undefined;
-		st.value = resolvedDefault;
-		st.errors = [];
-		setModelValueByProp(props.modelValue, f.prop, resolvedDefault);
-	});
-	emitModel();
-}
-
 function clearValidate(propsList?: string[]) {
 	if (Array.isArray(propsList) && propsList.length) {
 		const targets = propsList
@@ -299,47 +251,8 @@ function clearFieldValidate(prop?: string) {
 	clearValidate([prop]);
 }
 
-function getValues() {
-	const out: Record<string, any> = {};
-	props.schema.fields.forEach((f: any) => {
-		if (f.component === "GroupTitle") return; // 标题不返回值
-		let v = fieldStates[f.prop]?.value;
-		if (typeof f.transformOut === "function")
-			v = f.transformOut(v, props.modelValue);
-		out[f.prop] = v;
-	});
-	return out;
-}
-
-function setValue(prop: string, value: any) {
-	const field = props.schema.fields.find((f) => f.prop === prop);
-	const st = ensureFieldState(prop);
-	st.value = value;
-	setModelValueByProp(props.modelValue, prop, value);
-
-	emits("change", prop, value);
-	emitModel();
-	if (hasFieldValue(value)) {
-		clearFieldValidate(prop);
-	}
-	// 使用官方触发，不在此手动调用校验
-}
-function hasFieldValue(value: any) {
-	if (value === undefined || value === null) return false;
-	if (typeof value === "string") return value.trim().length > 0;
-	if (Array.isArray(value)) return value.length > 0;
-	if (typeof value === "number") return Number.isFinite(value);
-	if (typeof value === "boolean") return value;
-	if (value instanceof Date) return !Number.isNaN(value.getTime());
-	return true;
-}
-
 function getFieldState(prop: string) {
 	return fieldStates[prop] || ensureFieldState(prop);
-}
-
-function emitModel() {
-	emits("update:modelValue", { ...props.modelValue });
 }
 
 // 级联快速清空：给定一个 root 字段，递归清空其 cascadeTo 链上所有子字段
