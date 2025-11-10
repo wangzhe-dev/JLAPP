@@ -12,6 +12,7 @@ import {
 	resolveFieldName,
 } from "./utils/fieldHelpers";
 import { useFormState } from "./core/useFormState";
+import { useFormValidation } from "./core/useFormValidation";
 import type {
 	CFormSchema,
 	CFormSchemaField,
@@ -52,6 +53,14 @@ const {
 } = useFormState(props, emits, emitModel);
 
 const formRef = ref<any>();
+
+// 使用验证逻辑Hook
+const { validate, validateDetail, clearValidate } = useFormValidation(
+	props,
+	formRef,
+	fieldStates,
+	emits
+);
 const rules = ref<Record<string, any[]>>({});
 const slots = useSlots();
 const hasActionsSlot = computed(() => Boolean(slots.actions));
@@ -145,103 +154,6 @@ watch(
 	() => buildRules(),
 	{ deep: true }
 );
-
-async function validateDetail(propsList?: string[]) {
-	if (props.schema.hooks?.beforeValidate) {
-		const pass = await props.schema.hooks.beforeValidate(props.modelValue);
-		if (pass === false) return { ok: false, errors: [] };
-	}
-	let ok = true;
-	let errorsAgg: { prop: string; message: string }[] = [];
-	try {
-		await formRef.value?.validate();
-	} catch (err: any) {
-		ok = false;
-		if (Array.isArray(err)) {
-			errorsAgg = err
-				.map((e: any) => ({
-					prop: e.name || e.field || e.prop,
-					message: e.message || e.msg || "校验失败",
-				}))
-				.filter((e) => e.prop);
-		} else if (err?.errors && Array.isArray(err.errors)) {
-			errorsAgg = err.errors.map((e: any) => ({
-				prop: e.name || e.field || e.prop,
-				message: e.message || e.msg || "校验失败",
-			}));
-		} else if (err && typeof err === "object") {
-			errorsAgg = Object.keys(err).map((k) => ({
-				prop: k,
-				message: (err as any)[k],
-			}));
-		}
-	}
-	if (propsList?.length) {
-		errorsAgg = errorsAgg.filter((e) => propsList.includes(e.prop));
-		ok = errorsAgg.length === 0;
-	}
-	const mode = props.schema.errorDisplay;
-	// banner 模式已删除，仅保留 toast/first 的首条提示
-	if ((mode === "toast" || mode === "first") && errorsAgg.length) {
-		uni.showToast({ title: errorsAgg[0].message, icon: "none" });
-	}
-	// 如果用户关闭了内置 scrollToFirstError (schema.scrollToFirstError === false) 仍可手动滚动
-	if (errorsAgg.length && props.schema.scrollToFirstError === false) {
-		const first = errorsAgg[0];
-		// 使用 selectorQuery 滚动
-		const id = `#cform-item-${first.prop}`;
-		try {
-			uni
-				.createSelectorQuery()
-				.select(id)
-				.boundingClientRect((rect) => {
-					if (rect) {
-						uni.pageScrollTo({
-							duration: 200,
-							scrollTop: rect.top + (rect.top > 60 ? rect.top - 60 : 0),
-						});
-					}
-				})
-				.exec();
-		} catch (e) {}
-	}
-	emits("validated", ok);
-	if (props.schema.hooks?.afterValidate) {
-		try {
-			await props.schema.hooks.afterValidate({ ok, errors: errorsAgg });
-		} catch (e) {}
-	}
-	return { ok, errors: errorsAgg };
-}
-
-async function validate(propsList?: string[]) {
-	return (await validateDetail(propsList)).ok;
-}
-
-function clearValidate(propsList?: string[]) {
-	if (Array.isArray(propsList) && propsList.length) {
-		const targets = propsList
-			.map((prop) => {
-				const field = props.schema.fields.find((f) => f.prop === prop);
-				if (!field) return undefined;
-				return resolveFieldName(field);
-			})
-			.filter(Boolean);
-		if (targets.length) formRef.value?.clearValidate?.(targets as any);
-	} else {
-		formRef.value?.clearValidate?.();
-	}
-	if (!propsList || !propsList.length) {
-		Object.values(fieldStates).forEach((st) => {
-			if (st) st.errors = [];
-		});
-		return;
-	}
-	propsList.forEach((prop) => {
-		const st = fieldStates[prop];
-		if (st) st.errors = [];
-	});
-}
 
 function clearFieldValidate(prop?: string) {
 	if (!prop) {
