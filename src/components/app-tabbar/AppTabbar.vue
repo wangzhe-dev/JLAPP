@@ -26,16 +26,16 @@
 import { computed, withDefaults, defineProps, defineEmits, watch, ref, onMounted, nextTick } from 'vue'
 import type { AppTabItem } from '@/config/tabbar'
 
-const props = withDefaults(defineProps<{ 
+const props = withDefaults(defineProps<{
   tabs: AppTabItem[]
   modelValue?: string
   safeArea?: boolean
   background?: string
   blur?: boolean
   transparent?: boolean
-  iconSize?: number
-  labelSize?: number
-  height?: number
+  iconSize?: number | string
+  labelSize?: number | string
+  height?: number | string
 }>(), {
   tabs: () => [],
   safeArea: true,
@@ -79,22 +79,34 @@ const safeBottomCss = computed(() => {
     : 'env(safe-area-inset-bottom, 0px)'
 })
 
+function normalizeSize(value: number | string | undefined, defaultValue: number): string {
+  if (value === undefined || value === null) return `${defaultValue}px`
+  if (typeof value === 'number') return `${value}px`
+  const str = String(value).trim()
+  // If already has unit, use as-is; otherwise append px
+  return /^\d+(\.\d+)?(px|rpx|rem|em|vh|vw|%)$/.test(str) ? str : `${str}px`
+}
+
 const wrapperStyle = computed(() => {
+  const heightValue = normalizeSize(props.height, 70)
+  const labelSizeValue = normalizeSize(props.labelSize, 16)
+  const iconSizeValue = normalizeSize(props.iconSize, 26)
+
   const styles: string[] = [
-    `--sar-tabbar-height:${props.height}px`,
+    `--sar-tabbar-height:${heightValue}`,
     `--sar-tabbar-bg:${props.transparent ? 'transparent' : props.background}`,
     `--sar-tabbar-color:${inactiveColor.value}`,
-    `--sar-tabbar-item-ative-color:${activeColor.value}`,
+    `--sar-tabbar-item-active-color:${activeColor.value}`,
     `--sar-tabbar-border-color:rgba(0,0,0,0)`,
-    `--sar-tabbar-item-text-font-size:${props.labelSize}px`,
-    `--sar-tabbar-item-icon-font-size:${props.iconSize}px`,
+    `--sar-tabbar-item-text-font-size:${labelSizeValue}`,
+    `--sar-tabbar-item-icon-font-size:${iconSizeValue}`,
     `left:0`,
     `right:0`,
     `bottom:0`,
     `position:fixed`,
     `z-index:500`,
     `padding-bottom:${safeBottomCss.value}`,
-    `height:calc(${props.height}px + ${safeBottomCss.value})`,
+    `height:calc(${heightValue} + ${safeBottomCss.value})`,
     `border-top-left-radius:20px`,
     `border-top-right-radius:20px`,
     `overflow:hidden`,

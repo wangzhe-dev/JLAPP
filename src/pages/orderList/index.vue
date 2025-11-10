@@ -54,7 +54,7 @@
 			</template>
 			<template #item="{ item, index }">
 				<CCard
-					:key="item.id || index"
+					:key="item.id"
 					class="wo-card"
 					:title="resolveCardTitle(item)"
 					:extra="resolveCardExtra(item)"
