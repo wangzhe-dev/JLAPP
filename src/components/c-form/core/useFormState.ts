@@ -81,7 +81,7 @@ export function useFormState(
    * 判断是否为Slot字段
    */
   function isSlotField(field: CFormSchemaField): boolean {
-    return field?.component === 'Slot' || !!(field as any)?.slotName
+    return (field?.component as string) === 'Slot' || !!(field as any)?.slotName
   }
 
   /**
@@ -152,11 +152,11 @@ export function useFormState(
    */
   function reset(propsList?: string[]): void {
     const targets = propsList
-      ? props.schema.fields.filter(f => propsList.includes(f.prop))
+      ? props.schema.fields.filter(f => f.prop && propsList.includes(f.prop))
       : props.schema.fields
 
     targets.forEach(f => {
-      if (f.component === 'GroupTitle' || isSlotField(f)) return
+      if (f.component === 'GroupTitle' || isSlotField(f) || !f.prop) return
 
       const state = ensureFieldState(f.prop)
 
@@ -201,7 +201,7 @@ export function useFormState(
    */
   function initializeFieldStates(): void {
     props.schema.fields.forEach((f: any) => {
-      if (f.component === 'GroupTitle' || isSlotField(f)) return
+      if (f.component === 'GroupTitle' || isSlotField(f) || !f.prop) return
 
       // 初始化选项存储
       fieldOptionsStore[f.prop] = Array.isArray(f.options) ? f.options : []

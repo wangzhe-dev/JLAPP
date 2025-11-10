@@ -126,7 +126,7 @@ export function useFormValidation(
         .createSelectorQuery()
         .select(id)
         .boundingClientRect((rect) => {
-          if (rect) {
+          if (rect && !Array.isArray(rect) && rect.top !== undefined) {
             uni.pageScrollTo({
               duration: 200,
               scrollTop: rect.top + (rect.top > 60 ? rect.top - 60 : 0),
@@ -174,7 +174,7 @@ export function useFormValidation(
       showValidationError(errorsAgg, props.schema.errorDisplay)
 
       // 5. 滚动到第一个错误（如果未禁用）
-      if (props.schema.scrollToFirstError === false && errorsAgg.length) {
+      if ((props.schema as any).scrollToFirstError !== false && errorsAgg.length) {
         scrollToError(errorsAgg[0].prop)
       }
     }

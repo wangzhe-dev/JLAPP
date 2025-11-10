@@ -77,12 +77,13 @@ export function useFormWatch(
 
     schema.fields.forEach((field) => {
       if (isSlotField(field)) return
+      if (!field.prop) return
 
       // 1. 级联依赖 (cascadeTo)
       if (field.cascadeTo?.length) {
         field.cascadeTo.forEach((targetProp) => {
           relations.push({
-            source: field.prop,
+            source: field.prop!,
             target: targetProp,
             type: 'cascade',
             clearOnChange: true, // 级联总是清空子字段
@@ -95,7 +96,7 @@ export function useFormWatch(
         field.asyncOptions.dependOn.forEach((sourceProp) => {
           relations.push({
             source: sourceProp,
-            target: field.prop,
+            target: field.prop!,
             type: 'asyncOptions',
             clearOnChange: !!field.clearOnDependChange,
           })
@@ -116,6 +117,7 @@ export function useFormWatch(
 
     schema.fields.forEach((field) => {
       if (isSlotField(field)) return
+      if (!field.prop) return
 
       // 有visible配置或clearWhenHidden的字段需要监听
       if (field.visible || field.clearWhenHidden) {
