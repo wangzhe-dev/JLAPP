@@ -5,6 +5,12 @@ import { fetchDict } from "./dict";
 import * as FieldComponents from "./fields";
 import { resolvePresets } from "./presets";
 import { getFormComponent } from "./registry";
+import {
+	splitPropPath,
+	getModelValueByProp,
+	setModelValueByProp,
+	resolveFieldName,
+} from "./utils/fieldHelpers";
 import type {
 	CFormSchema,
 	CFormSchemaField,
@@ -39,56 +45,6 @@ const initialSnapshot: Record<string, any> = {};
 const asyncOptionCache: Record<string, { ts: number; data: any[] }> = reactive(
 	{}
 );
-
-function splitPropPath(prop?: string) {
-	if (!prop) return [] as string[];
-	return prop
-		.split(".")
-		.map((segment) => segment.trim())
-		.filter(Boolean);
-}
-
-function getModelValueByProp(model: Record<string, any>, prop?: string) {
-	if (!model || !prop) return undefined;
-	const segments = splitPropPath(prop);
-	if (!segments.length) return undefined;
-	return segments.reduce((acc: any, key) => {
-		if (acc === undefined || acc === null) return undefined;
-		return acc[key];
-	}, model);
-}
-
-function ensureModelPath(model: Record<string, any>, segments: string[]) {
-	let cursor = model;
-	for (let i = 0; i < segments.length - 1; i++) {
-		const key = segments[i];
-		const next = cursor[key];
-		if (typeof next !== "object" || next === null) {
-			cursor[key] = {};
-		}
-		cursor = cursor[key];
-	}
-	return cursor;
-}
-
-function setModelValueByProp(
-	model: Record<string, any>,
-	prop: string,
-	value: any
-) {
-	if (!model || !prop) return;
-	const segments = splitPropPath(prop);
-	if (!segments.length) return;
-	const parent = ensureModelPath(model, segments);
-	parent[segments[segments.length - 1]] = value;
-}
-
-function resolveFieldName(field: CFormSchemaField) {
-	if (!field?.prop) return field?.prop;
-	const segments = splitPropPath(field.prop);
-	if (!segments.length) return field.prop;
-	return segments.length > 1 ? segments : field.prop;
-}
 
 function ensureFieldState(prop: string): InternalFieldState {
 	if (!fieldStates[prop])
