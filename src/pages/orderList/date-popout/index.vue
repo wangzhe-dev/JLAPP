@@ -111,8 +111,6 @@ async function handleBeforeClose(type: "confirm" | "cancel" | "close") {
 	gap: 16px;
 	padding: 16px 20px 24px 20px;
 	box-sizing: border-box;
-	max-height: 20vh;
-	overflow-y: auto;
 }
 
 .date-popout__form {

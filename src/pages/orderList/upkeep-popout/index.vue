@@ -489,8 +489,6 @@ async function handleBeforeClose(type: "confirm" | "cancel" | "close") {
 	gap: 16px;
 	padding: 16px 20px 24px 20px !important;
 	box-sizing: border-box;
-	max-height: 70vh;
-	overflow-y: auto;
 }
 
 .approval-popout__form {

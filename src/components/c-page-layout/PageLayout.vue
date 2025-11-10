@@ -134,7 +134,7 @@ const props = withDefaults(
 		background: "#f6f8fa",
 		padding: "0",
 		withTabbar: false,
-		tabbarReserve: "88px",
+		tabbarReserve: "70px",
 		backText: "",
 		autoNavigateBack: true,
 	},

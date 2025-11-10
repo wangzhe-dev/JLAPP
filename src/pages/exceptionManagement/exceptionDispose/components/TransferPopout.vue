@@ -254,8 +254,6 @@ function handleDispatchError(error: any) {
 	gap: 16px;
 	padding: 16px 20px 24px 20px !important;
 	box-sizing: border-box;
-	max-height: 40vh;
-	overflow-y: auto;
 }
 
 .transfer-popout__form {

@@ -44,7 +44,7 @@ const props = withDefaults(defineProps<{
   transparent: false,
   iconSize: 26,
   labelSize: 16,
-  height: 88
+  height: 70
 })
 
 const emits = defineEmits<{ (e:'update:modelValue', v:string):void; (e:'change', v:AppTabItem):void }>()
