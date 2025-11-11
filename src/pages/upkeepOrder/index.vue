@@ -109,6 +109,7 @@ const loading = ref<boolean>(true);
 const submitting = ref<boolean>(false);
 const id = ref<string>("");
 const source = ref<string>("1");
+const formMode = ref<"repair" | "again">("repair");
 
 const statusDict = ref<Record<string, string>>({});
 const sparePartVisible = ref<boolean>(false);

@@ -319,7 +319,6 @@ async function handleBeforeClose(type: "confirm" | "cancel" | "close") {
 			equipmentRepairauditing: {
 				orderStatus: approvalResult,
 				approvalResult,
-				auditingReport: formModel.value.auditingReport,
 				auditingSuggest: formModel.value.auditingSuggest,
 			},
 		};
