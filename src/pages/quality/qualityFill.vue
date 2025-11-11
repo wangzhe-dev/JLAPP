@@ -4,7 +4,7 @@
       <scroll-view class="qf-scroll" scroll-y>
         <view v-if="loading" class="qf-loading">加载中...</view>
         <template v-else>
-          <CForm ref="baseFormRef" v-model="form" :schema="schemaRef" @change="onFormFieldChange">
+          <CForm ref="formRef" v-model="form" :schema="schemaRef" @change="onFormFieldChange">
             <template #actions>
               <!-- 环境测量记录 -->
               <view class="">
@@ -176,7 +176,7 @@ interface QualityRecord {
   _localId?: string;
 }
 
-const baseFormRef = ref<CFormExpose>();
+const formRef = ref<CFormExpose>();
 const loading = ref<boolean>(false);
 const saving = ref<boolean>(false);
 const pageMode = ref<"edit" | "view" | "plan">("edit");
@@ -244,7 +244,7 @@ const fillStatusOption = ref<any[]>([]);
 const consMethodTypeOption = ref<any[]>([]);
 
 watch(
-  () => baseFormRef.value,
+  () => formRef.value,
   (instance) => {
     if (instance && pendingInspectorName.value) {
       instance.setValue?.("coatingInspectorName", pendingInspectorName.value);
@@ -265,7 +265,7 @@ function applyLocalInspectorName() {
 
   pendingInspectorName.value = candidate;
   form.value.coatingInspectorName = candidate;
-  baseFormRef.value?.setValue?.("coatingInspectorName", candidate);
+  formRef.value?.setValue?.("coatingInspectorName", candidate);
   pendingInspectorName.value = "";
 }
 
@@ -811,14 +811,11 @@ function serializeRecords() {
 async function handleSubmit() {
   if (saving.value) return;
 
-  // ① 兜底必填（基础表单）
-  if (!validateBaseFormRequired()) return;
-
-  // ② CForm 规则校验（若 CForm 支持 rules）
-  const ok = await baseFormRef.value?.validate();
+  // ① CForm 规则校验（包含所有基础表单必填项）
+  const ok = await formRef.value?.validate();
   if (!ok) return;
 
-  // ③ 记录项校验
+  // ② 记录项校验
   if (!validateRecords()) return;
 
   saving.value = true;

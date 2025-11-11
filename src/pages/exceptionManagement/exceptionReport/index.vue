@@ -2,7 +2,7 @@
 	<PageLayout title="异常上报" :show-back="true">
 		<view class="er-page">
 			<CForm
-				ref="cFormRef"
+				ref="formRef"
 				v-model="form"
 				:schema="schemaRef"
 				@submit="handleSubmit"
@@ -74,7 +74,7 @@ import { normalizePictureList, ensurePicturePreviewUrl } from "@/utils/picture";
 // form 内部约定：_mode: 'create' | 'edit' | 'view'; _locks: Record<string,1>
 // 允许外部页面通过路由参数预置：mode, id, prefill(json/base64), locks(逗号分隔字段)
 const form = ref<any>({ _mode: "create", _locks: {} });
-const cFormRef = ref<any>();
+const formRef = ref<any>();
 const isViewMode = computed(() => form.value._mode === "view");
 const managementRecords = computed(() => {
 	const list = form.value?.managementRecordList;
@@ -371,12 +371,12 @@ function queueFieldSync() {
 	fieldSyncScheduled = true;
 	nextTick().then(() => {
 		fieldSyncScheduled = false;
-		if (!cFormRef.value?.setValue) return;
+		if (!formRef.value?.setValue) return;
 		const toSync = Array.from(pendingFieldSync);
 		pendingFieldSync.clear();
 		toSync.forEach((prop) => {
 			try {
-				cFormRef.value.setValue(prop, form.value[prop]);
+				formRef.value.setValue(prop, form.value[prop]);
 			} catch (e) {
 				// ignore individual field sync errors
 			}
@@ -385,7 +385,7 @@ function queueFieldSync() {
 }
 
 watch(
-	() => cFormRef.value,
+	() => formRef.value,
 	(val) => {
 		if (val && pendingFieldSync.size) queueFieldSync();
 	}
@@ -767,7 +767,7 @@ function onFieldChange(prop: string, value: any) {
 
 async function submit(options: { isSubmit?: number } = {}) {
 	if (form.value._mode === "view") return; // 查看模式不提交
-	const valid = await cFormRef.value?.validate?.();
+	const valid = await formRef.value?.validate?.();
 	if (!valid) return;
 	const payload = await buildSubmitPayload(options);
 	handleSubmit(payload);

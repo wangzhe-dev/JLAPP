@@ -7,7 +7,7 @@
 		<view class="approval-popout">
 			<!-- 采用 CForm 承载结构化信息，便于后续扩展字段 -->
 			<CForm
-				ref="cFormRef"
+				ref="formRef"
 				v-model="formModel"
 				:schema="schemaRef"
 				v-if="visible"
@@ -77,7 +77,7 @@ const props = withDefaults(
 	}
 );
 
-const cFormRef = ref<CFormExpose | null>(null);
+const formRef = ref<CFormExpose | null>(null);
 const repairRecords = ref<any[]>([]);
 
 const recordsLoading = ref(false);
@@ -317,7 +317,7 @@ async function handleBeforeClose(type: "confirm" | "cancel" | "close") {
 	if (type !== "confirm") {
 		return true;
 	}
-	const form = cFormRef.value;
+	const form = formRef.value;
 	if (form?.validate) {
 		const ok = await form.validate();
 		if (!ok) return false;

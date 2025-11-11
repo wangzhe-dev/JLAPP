@@ -1,7 +1,7 @@
 <template>
 	<PageLayout title="设备报修" :show-back="true" :safe-bottom="true">
 		<CForm
-			ref="cFormRef"
+			ref="formRef"
 			v-model="formData"
 			:schema="schema"
 			@submit="handleSubmit"
@@ -35,7 +35,7 @@ const formData = ref<Record<string, any>>({
 	imagePath: [],
 });
 
-const cFormRef = ref<any>();
+const formRef = ref<any>();
 
 const schema = repairFormSchema;
 
@@ -66,7 +66,7 @@ function normalizeImagePathList(input: any): string {
 }
 
 async function handleSubmit(data: Record<string, any>) {
-	const valid = await cFormRef.value?.validate?.();
+	const valid = await formRef.value?.validate?.();
 	if (!valid) return;
 	const payload = {
 		...data,
@@ -132,13 +132,13 @@ async function updateEquipmentInfoByCode(rawCode: any) {
 function applyEquipmentName(name: string) {
 	const finalName = name || "";
 	formData.value.equipmentName = finalName;
-	cFormRef.value?.setValue?.("equipmentName", finalName);
+	formRef.value?.setValue?.("equipmentName", finalName);
 }
 
 function applyFactoryName(name: string) {
 	const finalName = name || "";
 	formData.value.factoryName = finalName;
-	cFormRef.value?.setValue?.("factoryName", finalName);
+	formRef.value?.setValue?.("factoryName", finalName);
 }
 
 function queryEquipmentCode(params: { equipmentCode: string }) {
@@ -172,7 +172,7 @@ onLoad((options: Record<string, any>) => {
 	if (eqCode) {
 		formData.value.equipmentCode = eqCode;
 		nextTick(() => {
-			cFormRef.value?.setValue?.("equipmentCode", eqCode);
+			formRef.value?.setValue?.("equipmentCode", eqCode);
 		});
 	}
 	if (eqName) {
