@@ -57,11 +57,13 @@ import SparePartSelector from "@/pages/maintainOrder/components/SparePartSelecto
 import ChangePartsList from "@/pages/maintainOrder/components/ChangePartsList.vue";
 import CCard from "@/components/c-card/CCard.vue";
 import { ensurePicturePreviewUrl, normalizePictureList } from "@/utils/picture";
-import { getPartsManagementlist, selectPlanOrder } from "@/api/order";
+import { selectPlanOrder } from "@/api/order";
 import { formatDateTime } from "@/utils/date";
 import { pad } from "@/utils/format";
 import { toArray } from "@/utils/array";
+import { useSparePartManagement } from "@/composables/useSparePartManagement";
 const sparePartVisible = ref<boolean>(false);
+
 type BeforeCloseHandler = (
 	type: "confirm" | "cancel" | "close",
 	payload?: any
@@ -97,6 +99,7 @@ const recordsLoading = ref(false);
 const emit = defineEmits<{
 	(e: "update:visible", value: boolean): void;
 }>();
+
 const visible = computed({
 	get: () => !!props.visible,
 	set: (value) => emit("update:visible", value),
@@ -106,6 +109,12 @@ const formModel = ref<TextareaPopoutForm>({
 	startTime: "",
 	finishTime: "",
 	jneSeSpareConnectionList: [],
+});
+
+// 使用备件管理 Hook
+const { fetchSpareOptions, removeSparePart, onSparePartConfirm } = useSparePartManagement({
+	formData: formModel,
+	fieldPath: 'jneSeSpareConnectionList',
 });
 
 // 计算保养工时默认值（repairRecords 中 upkeepTime 的累加）
@@ -209,80 +218,6 @@ function resetForm() {
 }
 function openSparePartPop() {
 	sparePartVisible.value = true;
-}
-
-function onSparePartConfirm(payloadList: any) {
-	// 处理批量添加备件
-	if (!Array.isArray(payloadList) || !payloadList.length) {
-		console.warn("[UpkeepPopout] onSparePartConfirm: 无效的 payloadList");
-		return true;
-	}
-
-	const currentList = [];
-	payloadList.forEach((payload) => {
-		if (!payload || !payload.spareId) return;
-		currentList.push({
-			spareId: payload.spareId,
-			spareName: payload.spareName,
-			quantity: payload.quantity,
-			spareNum: payload.spareNum,
-		});
-	});
-
-	formModel.value.jneSeSpareConnectionList = currentList;
-	console.log("[UpkeepPopout] 备件已添加:", currentList.length);
-
-	// ⭐ 必须返回 true 表示成功
-	return true;
-}
-
-function removeSparePart(part: { spareId?: string }) {
-	const spareId = part?.spareId;
-	if (!spareId) return;
-
-	const list = formModel.value.jneSeSpareConnectionList;
-	if (!Array.isArray(list) || !list.length) return;
-
-	const nextList = list.filter(
-		(item: any) => String(item?.spareId ?? "") !== String(spareId)
-	);
-	if (nextList.length === list.length) return;
-
-	formModel.value.jneSeSpareConnectionList = nextList;
-}
-async function fetchSpareOptions() {
-	try {
-		const resp = await getPartsManagementlist({});
-
-		// 使用当前表单中的已选备件列表
-		const selectedMap = new Map(
-			(formModel.value.jneSeSpareConnectionList || []).map((item: any) => [
-				String(item.spareId || ""),
-				Number(item.spareNum) || 0,
-			])
-		);
-		const result = resp
-			.map((item: any) => {
-				const value = String(item?.id || item?.materialCode || "");
-				if (!value) return null;
-				const label = item?.spareName || item?.materialName || "";
-				if (!label) return null;
-				const baseQty = Number(item?.spareNum || item?.quantity || 1);
-				const quantity = Number.isFinite(baseQty) && baseQty > 0 ? baseQty : 1;
-				const selectedQty = selectedMap.get(value) || 0;
-				return {
-					spareId: value,
-					spareName: label,
-					quantity,
-					spareNum: selectedQty,
-				};
-			})
-			.filter(Boolean);
-		return result;
-	} catch (error) {
-		console.warn("[UpkeepOrder] fetchSpareOptions failed", error);
-		return [];
-	}
 }
 const buildFieldsComputed = computed<CFormSchemaField[]>(() => {
 	return [

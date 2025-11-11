@@ -104,10 +104,10 @@ import {
 	selectFaultReason,
 	selectFaultMeasureType,
 	selectFaultMeasure,
-	getPartsManagementlist,
 	equipmentRepairAdd,
 	getRepairMessage,
 } from "@/api/order";
+import { useSparePartManagement } from "@/composables/useSparePartManagement";
 import SparePartSelector from "./components/SparePartSelector.vue";
 import ChangePartsList from "./components/ChangePartsList.vue";
 import CCard from "@/components/c-card/CCard.vue";
@@ -378,6 +378,12 @@ const repairRecords = ref<any[]>([]);
 
 const faultReasonTypeMap = reactive(new Map<string, any>());
 const faultMeasureTypeMap = reactive(new Map<string, any>());
+
+// 使用备件管理 Hook
+const { fetchSpareOptions, removeSparePart, onSparePartConfirm } = useSparePartManagement({
+	formData: form,
+	fieldPath: 'repairFormData.changeParts',
+});
 
 function ensureRepairForm(): RepairFormData {
 	const current = form.value.repairFormData;
@@ -674,46 +680,6 @@ async function loadFaultMeasureList(typeCode: string) {
 	}
 }
 
-async function fetchSpareOptions() {
-	try {
-		const resp = await getPartsManagementlist({});
-
-		const repairForm = ensureRepairForm();
-		// repairForm.changeParts = repairForm.changeParts.filter(
-		// 	(item: any) => item.spareId !== part.spareId
-		// );
-		// 使用当前表单中的已选备件列表
-		const selectedMap = new Map(
-			(repairForm.changeParts || []).map((item: any) => [
-				String(item.spareId || ""),
-				Number(item.spareNum) || 0,
-			])
-		);
-
-		const result = resp
-			.map((item: any) => {
-				const value = String(item?.id || item?.materialCode || "");
-				if (!value) return null;
-				const label = item?.spareName || item?.materialName || "";
-				if (!label) return null;
-				const baseQty = Number(item?.spareNum || item?.quantity || 1);
-				const quantity = Number.isFinite(baseQty) && baseQty > 0 ? baseQty : 1;
-				const selectedQty = selectedMap.get(value) || 0;
-				return {
-					spareId: value,
-					spareName: label,
-					quantity,
-					spareNum: selectedQty,
-				};
-			})
-			.filter(Boolean);
-		return result;
-	} catch (error) {
-		console.warn("[UpkeepOrder] fetchSpareOptions failed", error);
-		return [];
-	}
-}
-
 async function fetchDetail(showToast = true) {
 	if (!id.value) return;
 	loading.value = true;
@@ -888,43 +854,6 @@ function sanitizeSpareNum(value: any): number | "" {
 	const num = Number(value);
 	if (!Number.isFinite(num) || num <= 0) return "";
 	return num;
-}
-
-function onSparePartConfirm(payloadList: any) {
-	if (!Array.isArray(payloadList) || !payloadList.length) {
-		console.warn("[MaintainOrder] onSparePartConfirm: 无效的 payloadList");
-		return true;
-	}
-
-	let repairForm = ensureRepairForm();
-	let currentList = [];
-	payloadList.forEach((payload) => {
-		if (!payload || !payload.spareId) return;
-		currentList.push({
-			spareId: payload.spareId,
-			spareName: payload.spareName,
-			quantity: payload.quantity,
-			spareNum: payload.spareNum,
-		});
-	});
-	repairForm.changeParts = currentList;
-	console.log("[MaintainOrder] 备件已添加:", repairForm.changeParts);
-	return true;
-}
-
-function removeSparePart(part: { spareId?: string }) {
-	if (!part?.spareId) return;
-	const repairForm = ensureRepairForm();
-	const prevList = Array.isArray(repairForm.changeParts)
-		? repairForm.changeParts
-		: [];
-	if (!prevList.length) return;
-	const nextList = prevList.filter(
-		(item: any) => String(item?.spareId) !== String(part.spareId)
-	);
-	if (nextList.length === prevList.length) return;
-	repairForm.changeParts = nextList;
-	updateRepairFormField("changeParts", nextList);
 }
 
 function previewImage(index: number) {

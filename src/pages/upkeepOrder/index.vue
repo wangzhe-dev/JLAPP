@@ -91,9 +91,9 @@ import SparePartSelector from "../maintainOrder/components/SparePartSelector.vue
 import { buildUpkeepFormFields } from "./upkeepFormSchema";
 import {
 	selectPlanOrder,
-	getPartsManagementlist,
 	submitOrder,
 } from "@/api/order";
+import { useSparePartManagement } from "@/composables/useSparePartManagement";
 import { queryDictList } from "@/api/dict";
 import { resolveStatusState } from "@/utils/status";
 import { ensurePicturePreviewUrl, normalizePictureList } from "@/utils/picture";
@@ -133,6 +133,12 @@ const form = ref<Record<string, any>>({
 });
 
 const planItemsRaw = ref<any[]>([]);
+
+// 使用备件管理 Hook
+const { fetchSpareOptions, removeSparePart, onSparePartConfirm } = useSparePartManagement({
+	formData: form,
+	fieldPath: 'upkeepFormData.changeParts',
+});
 
 const schemaRef = computed<CFormSchema>(() => ({
 	labelWidth: "240rpx",
@@ -444,55 +450,6 @@ function onSparePartChange(entry: any) {
 		});
 	}
 	updateUpkeepFormField("changeParts", upkeepForm.changeParts);
-}
-
-function onSparePartConfirm(payload: any) {
-	onSparePartChange(payload);
-	console.log('[UpkeepOrder] 备件已确认');
-	
-	// ⭐ 必须返回 true 表示成功
-	return true;
-}
-
-function removeSparePart(part: { spareId: string }) {
-	const upkeepForm = ensureUpkeepForm();
-	upkeepForm.changeParts = upkeepForm.changeParts.filter(
-		(item) => item.spareId !== part.spareId
-	);
-	updateUpkeepFormField("changeParts", upkeepForm.changeParts);
-}
-
-async function fetchSpareOptions() {
-	try {
-		const resp = await getPartsManagementlist({});
-
-		const selectedMap = new Map(
-			(ensureUpkeepForm().changeParts || []).map((item: any) => [
-				String(item.spareId || ""),
-				Number(item.spareNum) || 1,
-			])
-		);
-		return resp
-			.map((item: any) => {
-				const value = String(item?.id || item?.materialCode || "");
-				if (!value) return null;
-				const label = item?.spareName || item?.materialName || "";
-				if (!label) return null;
-				const baseQty = Number(item?.spareNum || item?.quantity || 1);
-				const quantity = Number.isFinite(baseQty) && baseQty > 0 ? baseQty : 1;
-				const selectedQty = selectedMap.get(value) || 0;
-				return {
-					spareId: value,
-					spareName: label,
-					quantity,
-					spareNum: selectedQty,
-				};
-			})
-			.filter(Boolean);
-	} catch (error) {
-		console.warn("[UpkeepOrder] fetchSpareOptions failed", error);
-		return [];
-	}
 }
 
 function handleFieldChange(prop: string, value: any) {
