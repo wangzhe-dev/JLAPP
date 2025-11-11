@@ -14,6 +14,7 @@
 import { ref, onMounted, nextTick } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
 import { CForm } from "@/components/c-form";
+import type { CFormExpose } from "@/components/c-form/types";
 import PageLayout from "@/components/c-page-layout/PageLayout.vue";
 import { repairFormSchema } from "./formSchema";
 import { http } from "@/utils/request";
@@ -35,7 +36,7 @@ const formData = ref<Record<string, any>>({
 	imagePath: [],
 });
 
-const formRef = ref<any>();
+const formRef = ref<CFormExpose | null>(null);
 
 const schema = repairFormSchema;
 

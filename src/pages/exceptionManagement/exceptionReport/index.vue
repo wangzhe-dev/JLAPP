@@ -65,7 +65,7 @@ import { EXCEPTION_LIST_REFRESH_KEY } from "@/pages/exceptionManagement/constant
 import PageLayout from "@/components/c-page-layout/PageLayout.vue";
 import { CForm } from "@/components/c-form";
 import CCard from "@/components/c-card/CCard.vue";
-import type { CFormSchema } from "@/components/c-form/types";
+import type { CFormSchema, CFormExpose } from "@/components/c-form/types";
 import { WORK_ORDER_PICK_RESULT_CACHE_KEY } from "@/utils/picker";
 import { formatDateTime } from "@/utils/date";
 import { normalizePictureList, ensurePicturePreviewUrl, stripPictureBaseUrl } from "@/utils/picture";
@@ -74,7 +74,7 @@ import { normalizePictureList, ensurePicturePreviewUrl, stripPictureBaseUrl } fr
 // form 内部约定：_mode: 'create' | 'edit' | 'view'; _locks: Record<string,1>
 // 允许外部页面通过路由参数预置：mode, id, prefill(json/base64), locks(逗号分隔字段)
 const form = ref<any>({ _mode: "create", _locks: {} });
-const formRef = ref<any>();
+const formRef = ref<CFormExpose | null>(null);
 const isViewMode = computed(() => form.value._mode === "view");
 const managementRecords = computed(() => {
 	const list = form.value?.managementRecordList;
