@@ -68,7 +68,7 @@ import CCard from "@/components/c-card/CCard.vue";
 import type { CFormSchema } from "@/components/c-form/types";
 import { WORK_ORDER_PICK_RESULT_CACHE_KEY } from "@/utils/picker";
 import { formatDateTime } from "@/utils/date";
-import { normalizePictureList, ensurePicturePreviewUrl } from "@/utils/picture";
+import { normalizePictureList, ensurePicturePreviewUrl, stripPictureBaseUrl } from "@/utils/picture";
 
 // ====== 表单基础状态 ======
 // form 内部约定：_mode: 'create' | 'edit' | 'view'; _locks: Record<string,1>
@@ -314,58 +314,6 @@ function joinWithSlash(base: string | undefined, suffix: string): string {
 const FILE_UPLOAD_URL = joinWithSlash(requestUrl, "/file/upload");
 const FILE_PREVIEW_BASE_SOURCE = minioBaseUrl || requestUrl || "";
 const FILE_PREVIEW_BASE = FILE_PREVIEW_BASE_SOURCE.replace(/\/+$/, "");
-const FILE_PREVIEW_PROTOCOL =
-	FILE_PREVIEW_BASE.match(/^[a-z]+:/i)?.[0] || "https:";
-const FILE_PREVIEW_BASE_CANDIDATES = Array.from(
-	new Set(
-		[
-			FILE_PREVIEW_BASE,
-			FILE_PREVIEW_BASE_SOURCE,
-			minioBaseUrl,
-			requestUrl,
-			imgUrl,
-		]
-			.filter((base: string | undefined | null): base is string => !!base)
-			.map((base) => base.replace(/\/+$/, ""))
-	)
-);
-const FILE_PREVIEW_LEGACY_BASES = Array.from(
-	new Set(
-		[imgUrl, requestUrl]
-			.filter((base: string | undefined | null): base is string => !!base)
-			.map((base) => base.replace(/\/+$/, ""))
-	)
-);
-
-function stripPicturePreviewBase(raw: string): string {
-	if (!raw) return "";
-	let current = raw.trim();
-	if (!current) return "";
-	for (const base of FILE_PREVIEW_BASE_CANDIDATES) {
-		if (!base) continue;
-		if (current.startsWith(`${base}/`)) {
-			current = current.slice(base.length + 1);
-			break;
-		}
-		if (current.startsWith(base)) {
-			current = current.slice(base.length);
-			break;
-		}
-	}
-	for (const legacy of FILE_PREVIEW_LEGACY_BASES) {
-		if (!legacy) continue;
-		if (current.startsWith(`${legacy}/`)) {
-			current = current.slice(legacy.length + 1);
-			break;
-		}
-		if (current.startsWith(legacy)) {
-			current = current.slice(legacy.length);
-			break;
-		}
-	}
-	return current.replace(/^\/+/, "");
-}
-
 function queueFieldSync() {
 	if (fieldSyncScheduled) return;
 	fieldSyncScheduled = true;
@@ -783,8 +731,8 @@ function buildSubmitPayload(options: { isSubmit?: number } = {}) {
 		const cleaned = payload.exceptionPictureUrl
 			.map((u: any) => {
 				if (u == null) return "";
-				if (typeof u === "string") return stripPicturePreviewBase(u);
-				return stripPicturePreviewBase(ensurePicturePreviewUrl(u));
+				if (typeof u === "string") return stripPictureBaseUrl(u);
+				return stripPictureBaseUrl(ensurePicturePreviewUrl(u));
 			})
 			.map((u: string) => u.trim())
 			.filter((u: string) => u !== "");
