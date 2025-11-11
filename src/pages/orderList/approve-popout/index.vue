@@ -20,7 +20,7 @@
 							:key="record.id || record.repairId || index"
 							variant="outline"
 							:title="record.equipmentName"
-							:extra="formatRecordTime(record.createdTime)"
+							:extra="formatDateTime(record.createdTime)"
 							:lines="resolveRepairLines(record)"
 						/>
 					</div>
@@ -43,7 +43,7 @@ import type {
 import CCard from "@/components/c-card/CCard.vue";
 import { ensurePicturePreviewUrl, normalizePictureList } from "@/utils/picture";
 import { getRepairMessage } from "@/api/order";
-import { pad } from "@/utils/format";
+import { formatDateTime } from "@/utils/date";
 import { toArray } from "@/utils/array";
 
 type ApproveOption = {
@@ -210,17 +210,6 @@ async function loadRepairRecords(id: string) {
 	}
 }
 
-function formatRecordTime(value: any) {
-	if (!value && value !== 0) return "-";
-	const date = new Date(value);
-	if (Number.isNaN(date.getTime())) return String(value ?? "-");
-	return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
-		date.getDate()
-	)} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(
-		date.getSeconds()
-	)}`;
-}
-
 function resolveRepairLines(record: any) {
 	const primaryLineCount = 3;
 	const lines: any[] = [];
@@ -240,8 +229,8 @@ function resolveRepairLines(record: any) {
 	});
 
 	addLine("维修过程", record?.repairProcess ?? "-");
-	addLine("开始时间", formatRecordTime(record?.repairStartTime));
-	addLine("结束时间", formatRecordTime(record?.repairEndTime));
+	addLine("开始时间", formatDateTime(record?.repairStartTime));
+	addLine("结束时间", formatDateTime(record?.repairEndTime));
 	addLine("维修净时(min)", record?.maintenanceTime ?? "-");
 	addLine("维修结果", record?.repairReason ?? record?.repairResult ?? "-");
 	addLine("原因或建议", record?.reason ?? record?.suggestion ?? "-");

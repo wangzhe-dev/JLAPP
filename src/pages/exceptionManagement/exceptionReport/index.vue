@@ -67,7 +67,7 @@ import { CForm } from "@/components/c-form";
 import CCard from "@/components/c-card/CCard.vue";
 import type { CFormSchema } from "@/components/c-form/types";
 import { WORK_ORDER_PICK_RESULT_CACHE_KEY } from "@/utils/picker";
-import { pad } from "@/utils/format";
+import { formatDateTime } from "@/utils/date";
 import { normalizePictureList, ensurePicturePreviewUrl } from "@/utils/picture";
 
 // ====== 表单基础状态 ======
@@ -458,15 +458,13 @@ function normalizeRouteParams(raw: Record<string, any> | undefined | null) {
 	return out;
 }
 
+/**
+ * 标准化日期时间格式
+ * 使用统一的 formatDateTime 工具，但保留空值
+ */
 function normalizeDateTime(value: any) {
 	if (value == null || value === "") return value;
-	if (typeof value === "string" && /\d{4}-\d{2}-\d{2}/.test(value))
-		return value;
-	const d = new Date(value);
-	if (isNaN(d.getTime())) return value;
-	return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(
-		d.getHours()
-	)}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+	return formatDateTime(value, { emptyValue: value });
 }
 
 async function applyStoredFormData(afterDetail = false) {

@@ -67,7 +67,7 @@
                       clearable
                       :disabled="isViewMode"
                       @update:model-value="(val) =>
-                        updateRecordField(index, 'measureTime', formatDateForDisplay(val))"
+                        updateRecordField(index, 'measureTime', formatDateYMD(val, ''))"
                     />
                   </view>
 
@@ -162,7 +162,7 @@ import { queryDictList as queryDictListBatch } from "@/api/dict";
 import { useUserStore } from "@/stores/user";
 import { storage } from "@/utils/storage";
 import _ from "lodash";
-import { pad } from "@/utils/format";
+import { formatDateYMD } from "@/utils/date";
 
 interface QualityRecord {
   id?: string;
@@ -629,7 +629,7 @@ function normalizeRecords(list: any): QualityRecord[] {
   return list.map((item) => ({
     id: item?.id,
     beforeConstructionWeather: item?.beforeConstructionWeather || "",
-    measureTime: formatDateForDisplay(item?.measureTime),
+    measureTime: formatDateYMD(item?.measureTime, ''),
     airTemperature: safeToString(item?.airTemperature),
     relativeHumidity: safeToString(item?.relativeHumidity),
     dewPointTemperature: safeToString(item?.dewPointTemperature),
@@ -689,19 +689,8 @@ function updateRecordField(index: number, key: keyof QualityRecord, value: any) 
   target[key] = value ?? "";
 }
 
-function formatDateForDisplay(input: any) {
-  if (!input) return "";
-  if (typeof input === "string") {
-    const matched = input.match(/^\d{4}-\d{2}-\d{2}/);
-    if (matched && matched[0]) return matched[0];
-  }
-  const d = new Date(input);
-  if (Number.isNaN(d.getTime())) return "";
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-}
-
 function formatDateForSubmit(value: any) {
-  const display = formatDateForDisplay(value);
+  const display = formatDateYMD(value, '');
   if (!display) return "";
   return `${display} 00:00:00`;
 }
