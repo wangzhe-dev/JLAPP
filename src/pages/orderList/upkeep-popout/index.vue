@@ -7,7 +7,7 @@
 		<view class="approval-popout">
 			<!-- 采用 CForm 承载结构化信息，便于后续扩展字段 -->
 			<CForm
-				ref="cFormRef"
+				ref="formRef"
 				v-model="formModel"
 				:schema="schemaRef"
 				v-if="visible"
@@ -92,7 +92,7 @@ const props = withDefaults(
 	}
 );
 
-const cFormRef = ref<CFormExpose | null>(null);
+const formRef = ref<CFormExpose | null>(null);
 const repairRecords = ref<any[]>([]);
 
 const recordsLoading = ref(false);
@@ -209,10 +209,10 @@ function resetForm() {
 
 	// 使用 nextTick 确保表单已渲染
 	setTimeout(() => {
-		if (cFormRef.value?.setValue) {
-			cFormRef.value.setValue("actualHour", defaultHour);
-			cFormRef.value.setValue("startTime", startTimeStr);
-			cFormRef.value.setValue("finishTime", finishTimeStr);
+		if (formRef.value?.setValue) {
+			formRef.value.setValue("actualHour", defaultHour);
+			formRef.value.setValue("startTime", startTimeStr);
+			formRef.value.setValue("finishTime", finishTimeStr);
 		}
 	}, 100);
 }
@@ -375,7 +375,7 @@ async function handleBeforeClose(type: "confirm" | "cancel" | "close") {
 	if (type !== "confirm") {
 		return true;
 	}
-	const form = cFormRef.value;
+	const form = formRef.value;
 	if (form?.validate) {
 		const ok = await form.validate();
 		if (!ok) return Promise.reject(false);
