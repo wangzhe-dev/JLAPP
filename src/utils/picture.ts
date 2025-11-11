@@ -163,3 +163,51 @@ export function normalizePictureList(raw: any): Array<{ id: string; src: string 
 
   return normalized
 }
+
+/**
+ * 将图片列表序列化为逗号分隔的字符串（用于提交）
+ *
+ * 从多种输入格式中提取URL并转换为后端期望的逗号分隔字符串
+ *
+ * @param input - 图片数据（数组或单个值）
+ * @returns 逗号分隔的URL字符串
+ *
+ * @example
+ * normalizeImagePathList([{url: "img1.jpg"}, "img2.jpg"])
+ * // "img1.jpg,img2.jpg"
+ *
+ * normalizeImagePathList("img1.jpg")
+ * // "img1.jpg"
+ *
+ * normalizeImagePathList(null)
+ * // ""
+ */
+export function normalizeImagePathList(input: any): string {
+  if (!input) return ''
+
+  const list = Array.isArray(input) ? input : [input]
+
+  const urls = list
+    .map((item: any) => {
+      if (!item) return ''
+      if (typeof item === 'string') return item.trim()
+
+      // 提取对象中的URL字段（按优先级）
+      return (
+        item.url ||
+        item.resultUrl ||
+        item.originUrl ||
+        item.path ||
+        item.tempFilePath ||
+        item.src ||
+        item.fileUrl ||
+        item.filepath ||
+        (item.response && (item.response.url || item.response.data)) ||
+        ''
+      )
+    })
+    .map((url: any) => (typeof url === 'string' ? url.trim() : ''))
+    .filter((url: string) => !!url)
+
+  return urls.join(',')
+}

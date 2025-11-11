@@ -112,39 +112,14 @@ import SparePartSelector from "./components/SparePartSelector.vue";
 import ChangePartsList from "./components/ChangePartsList.vue";
 import CCard from "@/components/c-card/CCard.vue";
 import { queryDictList } from "@/api/dict";
-import { ensurePicturePreviewUrl, normalizePictureList } from "@/utils/picture";
+import { ensurePicturePreviewUrl, normalizePictureList, normalizeImagePathList } from "@/utils/picture";
 import { resolveStatusState } from "@/utils/status";
 import { requestUrl } from "@/config";
 import { buildRepairFormFields } from "./repairFormSchema";
 import type { OptionItem } from "./repairFormSchema";
 import { isH5 } from "@/utils/platform";
 import { formatDateTime } from "@/utils/date";
-import { pad } from "@/utils/format";
 import { toArray } from "@/utils/array";
-
-function normalizeImagePathList(input: any): string {
-	if (!input) return "";
-	const list = Array.isArray(input) ? input : [input];
-	const urls = list
-		.map((item: any) => {
-			if (!item) return "";
-			if (typeof item === "string") return item.trim();
-			return (
-				item.url ||
-				item.resultUrl ||
-				item.originUrl ||
-				item.path ||
-				item.tempFilePath ||
-				item.src ||
-				(item.response && (item.response.url || item.response.data)) ||
-				""
-			);
-		})
-		.map((url: any) => (typeof url === "string" ? url.trim() : ""))
-		.filter((url: string) => !!url);
-	return urls.join(",");
-}
-
 
 const isPcClient = isH5();
 

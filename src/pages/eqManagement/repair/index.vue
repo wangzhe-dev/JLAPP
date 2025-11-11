@@ -19,7 +19,7 @@ import { repairFormSchema } from "./formSchema";
 import { http } from "@/utils/request";
 import { equipmentRepaircommit } from "@/api/order";
 import { formatDateTime } from "@/utils/date";
-import { pad } from "@/utils/format";
+import { normalizeImagePathList } from "@/utils/picture";
 
 
 const formData = ref<Record<string, any>>({
@@ -44,26 +44,6 @@ const schema = repairFormSchema;
 const EQUIPMENT_INFO_API = "/equipment/equipmentInfo/queryEquipmentCode";
 // 简单的请求序号用于避免并发查询时旧结果覆盖新结果
 let equipmentCodeRequestId = 0;
-
-function normalizeImagePathList(input: any): string {
-	if (!input) return "";
-	const list = Array.isArray(input) ? input : [input];
-	const normalized = list
-		.map((item: any) => {
-			if (!item) return "";
-			if (typeof item === "string") return item.trim();
-			return (
-				item.url ||
-				item.resultUrl ||
-				item.originUrl ||
-				(item.response && (item.response.url || item.response.data)) ||
-				""
-			);
-		})
-		.map((url: any) => (typeof url === "string" ? url.trim() : ""))
-		.filter((url: string) => !!url);
-	return normalized.join(",");
-}
 
 async function handleSubmit(data: Record<string, any>) {
 	const valid = await formRef.value?.validate?.();
