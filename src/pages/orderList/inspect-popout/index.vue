@@ -579,13 +579,17 @@ async function handleBeforeClose(type: "confirm" | "cancel" | "close") {
 
 .inspect-popout__form {
 	:deep(.c-form-wrapper) {
-		min-height: auto;
-		background: transparent;
-		padding-bottom: 0;
+		min-height: auto !important;
+		background: transparent !important;
+		padding-bottom: 0 !important;
 	}
 
 	:deep(.c-form) {
-		padding: 0;
+		padding: 0 !important;
+	}
+
+	:deep(.sar-form) {
+		padding: 0 !important;
 	}
 
 	// 美化卡片分组样式
