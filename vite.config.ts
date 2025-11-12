@@ -72,7 +72,40 @@ export default defineConfig(({ mode }) => {
 				drop_console: process.env.NODE_ENV === 'production',
 				drop_debugger: process.env.NODE_ENV === 'production'
 			}
-		}
+		},
+		// 代码分割优化
+		rollupOptions: {
+			output: {
+				// 分包策略：提取公共依赖
+				manualChunks: (id) => {
+					// 将 node_modules 中的库分离到 vendor
+					if (id.includes('node_modules')) {
+						// UI 组件库单独分包
+						if (id.includes('sard-uniapp')) {
+							return 'vendor-sard';
+						}
+						// 其他第三方库
+						return 'vendor';
+					}
+					// API 相关代码分包
+					if (id.includes('/src/api/')) {
+						return 'api';
+					}
+					// 工具函数分包
+					if (id.includes('/src/utils/')) {
+						return 'utils';
+					}
+				},
+				// 资源文件命名
+				chunkFileNames: 'js/[name]-[hash].js',
+				entryFileNames: 'js/[name]-[hash].js',
+				assetFileNames: '[ext]/[name]-[hash].[ext]',
+			},
+		},
+		// 提高 chunk 大小警告阈值（uni-app 应用通常较大）
+		chunkSizeWarningLimit: 1000,
+		// 启用 CSS 代码分割
+		cssCodeSplit: true,
 	},
 	// 合并项目自定义 server 配置（增加 host / headers / prod-api 代理）
 	server: {

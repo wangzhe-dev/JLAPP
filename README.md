@@ -1,16 +1,20 @@
 # 项目简介
 
-> 开发规范 & 多端/打包注意事项请先阅读：`docs/contribution-guidelines.md`
-
+> **📖 重要文档快速导航**
+> - 🔧 开发规范 & 多端/打包注意事项：[contribution-guidelines.md](./docs/contribution-guidelines.md)
+> - 📦 多端打包部署指南：[README_BUILD.md](./README_BUILD.md)
+> - ⚡ 性能优化指南：[PERFORMANCE.md](./PERFORMANCE.md)
+> - 📝 动态表单文档：[CForm 动态表单指南](./docs/components/CForm.md)
 
 基于 uni-app 的 Vue3 + TypeScript 快速开发模板，集成 sard-uniapp-ui、Vite、luch-request、Pinia 及 ESLint，旨在为跨平台应用开发提供高效、规范的基础环境，支持快速构建微信小程序、H5、App 等多端应用。
-
-> 动态表单说明文档：见 [CForm 动态表单指南](./docs/components/CForm.md)
 
 ## 项目特点
 
 - **技术栈前沿**：采用 Vue3 响应式系统，结合 Vite 高效构建工具，提升开发体验。
 - **状态管理**：集成 Pinia，提供更简洁、可扩展的状态管理方案。
+- **多端支持**：一套代码，支持 H5、微信小程序、支付宝小程序、百度小程序、Android、iOS 全平台部署。
+- **性能优化**：内置请求缓存、图片优化、代码分割等性能优化方案，详见 [PERFORMANCE.md](./PERFORMANCE.md)。
+- **跨平台适配**：完善的平台检测和样式适配方案，自动处理安全区域、状态栏等平台差异。
 
 > 迭代问题与解决方案日志：见 [docs/issues-log.md](./docs/issues-log.md)
 
@@ -140,8 +144,23 @@ pnpm install
 
 ### 构建发布
 
-- **微信小程序**：`pnpm run build:mp-weixin`
-- **H5**：`pnpm run build:h5`
+**使用 npm 命令**：
+```bash
+pnpm run build:h5          # 打包 H5
+pnpm run build:mp-weixin   # 打包微信小程序
+pnpm run build:mp-alipay   # 打包支付宝小程序
+pnpm run build:mp-baidu    # 打包百度小程序
+```
+
+**使用打包脚本**（推荐）：
+```bash
+chmod +x scripts/build.sh  # 首次使用需要添加执行权限
+./scripts/build.sh h5      # 打包 H5
+./scripts/build.sh weixin  # 打包微信小程序
+./scripts/build.sh all     # 打包所有平台
+```
+
+详细的多端打包部署指南请参考：[README_BUILD.md](./README_BUILD.md)
 
 ## 功能模块说明
 
