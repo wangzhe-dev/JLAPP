@@ -533,7 +533,7 @@ function onAction(item: CardAction, index: number, ev: any) {
 	suppressResetTimer = setTimeout(() => {
 		suppressRootClick = false;
 		suppressResetTimer = null;
-	}, 180);
+	}, 600);
 }
 
 function handleMediaClick(item: CardMedia, index: number, ev?: any) {

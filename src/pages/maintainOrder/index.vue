@@ -78,12 +78,6 @@
 				</CForm>
 			</view>
 		</view>
-		<SparePartSelector
-			v-model:visible="sparePartVisible"
-			:model-value="form.repairFormData?.changeParts || []"
-			:fetcher="fetchSpareOptions"
-			@confirm="onSparePartConfirm"
-		/>
 	</PageLayout>
 </template>
 
@@ -108,7 +102,6 @@ import {
 	equipmentRepairAdd,
 	getRepairMessage,
 } from "@/api/order";
-import SparePartSelector from "./components/SparePartSelector.vue";
 import ChangePartsList from "./components/ChangePartsList.vue";
 import CCard from "@/components/c-card/CCard.vue";
 import { queryDictList } from "@/api/dict";
@@ -485,8 +478,6 @@ const schemaRef = computed<CFormSchema>(() => ({
 	showActions: true,
 	fields: buildFields(),
 }));
-
-const sparePartVisible = ref<boolean>(false);
 
 function buildFields(): CFormSchemaField[] {
 	const detailFields: CFormSchemaField[] = [
@@ -905,7 +896,21 @@ watch(
 );
 
 function openSparePartPop() {
-	sparePartVisible.value = true;
+	// 跳转到备件选择页面
+	uni.navigateTo({
+		url: "/pages/sparePartPicker/index",
+		events: {
+			// 监听备件选择返回
+			selectSpares: (data: any) => {
+				console.log("[MaintainOrder] 接收到选择的备件:", data);
+				onSparePartConfirm(data);
+			},
+		},
+		success: (res) => {
+			// 通过 eventChannel 传递初始数据
+			res.eventChannel.emit("initialData", form.value.repairFormData?.changeParts || []);
+		},
+	});
 }
 
 function normalizeSparePart(item: any) {

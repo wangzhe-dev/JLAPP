@@ -52,6 +52,7 @@
 		{ "path": "pages/weldingDetail/index", "style": { "navigationBarTitleText": "焊接详情" } },
 		{ "path": "pages/workOrderDetail/index", "style": { "navigationBarTitleText": "工单详情" } },
 		{ "path": "pages/workOrderPicker/index", "style": { "navigationBarTitleText": "选择加工单" } },
+		{ "path": "pages/sparePartPicker/index", "style": { "navigationBarTitleText": "选择备件" } },
 		{ "path": "pages/xuqiuOrderList/index", "style": { "navigationBarTitleText": "需求工单" } }
 	],
 	"easycom": {

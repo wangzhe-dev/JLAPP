@@ -778,8 +778,8 @@ export function useOrderList() {
 	}
 
 	function handleCardClick(item: any, ev?: any) {
-		// 增加防抖时间到 300ms，确保按钮点击不会触发卡片点击
-		if (Date.now() - lastActionTime.value < 300) {
+		// 增加防抖时间到 500ms，确保按钮点击不会触发卡片点击
+		if (Date.now() - lastActionTime.value < 500) {
 			if (ev?.stopPropagation) ev.stopPropagation();
 			return;
 		}
