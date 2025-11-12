@@ -267,3 +267,295 @@ export async function uploadImages(
 
 	return results;
 }
+
+/**
+ * 批量上传图片（增强版：带重试、并发控制）
+ */
+export interface BatchUploadOptions {
+	/** 上传函数 */
+	uploadFn: (file: string) => Promise<string>;
+	/** 上传前是否压缩 */
+	compress?: boolean;
+	/** 压缩选项 */
+	compressOptions?: ImageOptimizeOptions;
+	/** 最大并发数 */
+	maxConcurrent?: number;
+	/** 失败重试次数 */
+	maxRetry?: number;
+	/** 进度回调 */
+	onProgress?: (current: number, total: number, percent: number) => void;
+	/** 单个文件上传成功回调 */
+	onItemSuccess?: (url: string, index: number) => void;
+	/** 单个文件上传失败回调 */
+	onItemError?: (error: any, index: number) => void;
+}
+
+export interface BatchUploadResult {
+	success: string[];
+	failed: { file: string; error: any; index: number }[];
+	total: number;
+}
+
+export async function batchUploadImages(
+	files: string[],
+	options: BatchUploadOptions
+): Promise<BatchUploadResult> {
+	const {
+		uploadFn,
+		compress = true,
+		compressOptions = {},
+		maxConcurrent = 3,
+		maxRetry = 2,
+		onProgress,
+		onItemSuccess,
+		onItemError,
+	} = options;
+
+	const result: BatchUploadResult = {
+		success: [],
+		failed: [],
+		total: files.length,
+	};
+
+	// 压缩图片
+	let processedFiles = files;
+	if (compress) {
+		try {
+			uni.showLoading({ title: '压缩图片中...' });
+			processedFiles = await Promise.all(
+				files.map((file) => compressImage(file, compressOptions))
+			);
+			uni.hideLoading();
+		} catch (error) {
+			console.warn('[Image] 批量压缩失败，使用原图', error);
+			uni.hideLoading();
+		}
+	}
+
+	// 并发上传队列
+	const queue = processedFiles.map((file, index) => ({ file, index }));
+	const running: Promise<void>[] = [];
+	let completed = 0;
+
+	const uploadWithRetry = async (
+		file: string,
+		index: number,
+		retryCount = 0
+	): Promise<string> => {
+		try {
+			return await uploadFn(file);
+		} catch (error) {
+			if (retryCount < maxRetry) {
+				console.log(`[Image] 重试上传 (${retryCount + 1}/${maxRetry})`, index);
+				// 延迟重试
+				await new Promise((resolve) => setTimeout(resolve, 1000 * (retryCount + 1)));
+				return uploadWithRetry(file, index, retryCount + 1);
+			}
+			throw error;
+		}
+	};
+
+	const processItem = async (item: { file: string; index: number }) => {
+		try {
+			const url = await uploadWithRetry(item.file, item.index);
+			result.success.push(url);
+			onItemSuccess?.(url, item.index);
+		} catch (error) {
+			result.failed.push({ file: item.file, error, index: item.index });
+			onItemError?.(error, item.index);
+		} finally {
+			completed++;
+			const percent = Math.floor((completed / files.length) * 100);
+			onProgress?.(completed, files.length, percent);
+		}
+	};
+
+	// 并发控制
+	while (queue.length > 0 || running.length > 0) {
+		// 填充运行队列
+		while (running.length < maxConcurrent && queue.length > 0) {
+			const item = queue.shift()!;
+			const promise = processItem(item);
+			running.push(promise);
+		}
+
+		// 等待任一任务完成
+		if (running.length > 0) {
+			await Promise.race(running);
+			// 清理已完成的任务
+			for (let i = running.length - 1; i >= 0; i--) {
+				const settled = await Promise.race([
+					running[i],
+					Promise.resolve('pending'),
+				]);
+				if (settled !== 'pending') {
+					running.splice(i, 1);
+				}
+			}
+		}
+	}
+
+	return result;
+}
+
+/**
+ * 选择并上传图片（一站式）
+ */
+export async function chooseAndUpload(
+	uploadFn: (file: string) => Promise<string>,
+	options: {
+		count?: number;
+		compress?: boolean;
+		compressOptions?: ImageOptimizeOptions;
+		showProgress?: boolean;
+	} = {}
+): Promise<string[]> {
+	const { count = 9, compress = true, compressOptions = {}, showProgress = true } = options;
+
+	// 选择图片
+	const files = await chooseImage({
+		count,
+		compress: false, // 后续统一压缩
+	});
+
+	if (files.length === 0) {
+		throw new Error('未选择图片');
+	}
+
+	// 显示进度
+	if (showProgress) {
+		uni.showLoading({ title: '上传中 0%' });
+	}
+
+	try {
+		const result = await batchUploadImages(files, {
+			uploadFn,
+			compress,
+			compressOptions,
+			maxConcurrent: 3,
+			onProgress: (current, total, percent) => {
+				if (showProgress) {
+					uni.showLoading({ title: `上传中 ${percent}%` });
+				}
+			},
+		});
+
+		if (showProgress) {
+			uni.hideLoading();
+		}
+
+		if (result.failed.length > 0) {
+			uni.showToast({
+				title: `${result.success.length} 张成功，${result.failed.length} 张失败`,
+				icon: 'none',
+			});
+		} else {
+			uni.showToast({
+				title: `已上传 ${result.success.length} 张`,
+				icon: 'success',
+			});
+		}
+
+		return result.success;
+	} catch (error) {
+		if (showProgress) {
+			uni.hideLoading();
+		}
+		throw error;
+	}
+}
+
+/**
+ * 给图片添加水印（用于异常报告、质检记录等）
+ */
+export interface WatermarkOptions {
+	/** 水印文字 */
+	text: string;
+	/** 位置 */
+	position?: 'topLeft' | 'topRight' | 'bottomLeft' | 'bottomRight' | 'center';
+	/** 字体大小 */
+	fontSize?: number;
+	/** 字体颜色 */
+	color?: string;
+	/** 透明度 */
+	opacity?: number;
+}
+
+export async function addWatermark(
+	imagePath: string,
+	options: WatermarkOptions
+): Promise<string> {
+	const {
+		text,
+		position = 'bottomRight',
+		fontSize = 14,
+		color = '#ffffff',
+		opacity = 0.6,
+	} = options;
+
+	return new Promise((resolve, reject) => {
+		// 获取图片信息
+		uni.getImageInfo({
+			src: imagePath,
+			success: (imgInfo) => {
+				const { width, height } = imgInfo;
+
+				// 创建 canvas 上下文
+				const ctx = uni.createCanvasContext('watermarkCanvas');
+
+				// 绘制原图
+				ctx.drawImage(imagePath, 0, 0, width, height);
+
+				// 设置水印样式
+				ctx.setFontSize(fontSize);
+				ctx.setFillStyle(color);
+				ctx.setGlobalAlpha(opacity);
+
+				// 计算水印位置
+				let x = 10;
+				let y = 10;
+
+				switch (position) {
+					case 'topLeft':
+						x = 10;
+						y = fontSize + 10;
+						break;
+					case 'topRight':
+						x = width - ctx.measureText(text).width - 10;
+						y = fontSize + 10;
+						break;
+					case 'bottomLeft':
+						x = 10;
+						y = height - 10;
+						break;
+					case 'bottomRight':
+						x = width - ctx.measureText(text).width - 10;
+						y = height - 10;
+						break;
+					case 'center':
+						x = (width - ctx.measureText(text).width) / 2;
+						y = height / 2;
+						break;
+				}
+
+				// 绘制水印
+				ctx.fillText(text, x, y);
+
+				// 导出图片
+				ctx.draw(false, () => {
+					uni.canvasToTempFilePath(
+						{
+							canvasId: 'watermarkCanvas',
+							success: (res) => {
+								resolve(res.tempFilePath);
+							},
+							fail: reject,
+						},
+						this
+					);
+				});
+			},
+			fail: reject,
+		});
+	});
+}
