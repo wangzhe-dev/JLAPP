@@ -4,6 +4,7 @@
 > - 🔧 开发规范 & 多端/打包注意事项：[contribution-guidelines.md](./docs/contribution-guidelines.md)
 > - 📦 多端打包部署指南：[README_BUILD.md](./README_BUILD.md)
 > - ⚡ 性能优化指南：[PERFORMANCE.md](./PERFORMANCE.md)
+> - 🏭 **船厂 MOM 系统优化指南**：[README_MOM.md](./README_MOM.md) ⭐
 > - 📝 动态表单文档：[CForm 动态表单指南](./docs/components/CForm.md)
 
 基于 uni-app 的 Vue3 + TypeScript 快速开发模板，集成 sard-uniapp-ui、Vite、luch-request、Pinia 及 ESLint，旨在为跨平台应用开发提供高效、规范的基础环境，支持快速构建微信小程序、H5、App 等多端应用。
