@@ -930,8 +930,7 @@ function onSparePartConfirm(payloadList: any) {
 		return true;
 	}
 
-	let repairForm = ensureRepairForm();
-	let currentList = [];
+	const currentList = [];
 	payloadList.forEach((payload) => {
 		if (!payload || !payload.spareId) return;
 		currentList.push({
@@ -941,8 +940,16 @@ function onSparePartConfirm(payloadList: any) {
 			spareNum: payload.spareNum,
 		});
 	});
+
+	// 直接更新 form.value.repairFormData.changeParts 以确保响应式更新
+	const repairForm = ensureRepairForm();
 	repairForm.changeParts = currentList;
+
+	// 强制触发响应式更新
+	form.value = { ...form.value };
+
 	console.log("[MaintainOrder] 备件已添加:", repairForm.changeParts);
+	console.log("[MaintainOrder] 当前表单数据:", form.value.repairFormData?.changeParts);
 	return true;
 }
 
@@ -959,6 +966,10 @@ function removeSparePart(part: { spareId?: string }) {
 	if (nextList.length === prevList.length) return;
 	repairForm.changeParts = nextList;
 	updateRepairFormField("changeParts", nextList);
+
+	// 强制触发响应式更新
+	form.value = { ...form.value };
+	console.log("[MaintainOrder] 备件已移除，剩余:", repairForm.changeParts);
 }
 
 function previewImage(index: number) {
