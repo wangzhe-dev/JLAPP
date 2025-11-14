@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { ref, reactive, nextTick, computed, watch } from "vue";
+import { ref, reactive, nextTick, computed, watch, onUnmounted } from "vue";
 import { onLoad, onShow } from "@dcloudio/uni-app";
 import {
 	userAllList,
@@ -23,6 +23,8 @@ import {
 import { commitCheckMission } from "@/api/inspection";
 import { queryDictList as queryDictListBatch } from "@/api/dict";
 import { resolveStatusState } from "@/utils/status";
+import { formatDateTime, formatDateYMD } from "@/utils/date";
+import { buildUrl } from "@/utils/url";
 
 const tabs = [
 	{ name: "a", title: "维修工单" },
@@ -297,21 +299,6 @@ export function useOrderList() {
 		);
 	}
 
-	function buildUrl(path: string, params: Record<string, any> = {}) {
-		const query = Object.keys(params)
-			.filter(
-				(key) =>
-					params[key] !== undefined &&
-					params[key] !== null &&
-					params[key] !== ""
-			)
-			.map(
-				(key) => `${encodeURIComponent(key)}=${encodeURIComponent(params[key])}`
-			)
-			.join("&");
-		return query ? `${path}?${query}` : path;
-	}
-
 	function updateQueryTypeByTab() {
 		if (activeTabName.value === "a") query.value.type = "repair";
 		else if (activeTabName.value === "b") query.value.type = "maintain";
@@ -471,38 +458,8 @@ export function useOrderList() {
 	}
 
 	function formatLineTime(v?: string | number) {
-		const formatted = formatTime(v);
+		const formatted = formatDateTime(v);
 		return formatted === "-" ? "" : formatted;
-	}
-
-	function formatTime(v?: string | number) {
-		if (v === undefined || v === null || v === "") return "-";
-		const d = new Date(
-			typeof v === "number" || /^\d+$/.test(String(v))
-				? Number(v)
-				: String(v).replace(/-/g, "/")
-		);
-		if (isNaN(d.getTime())) return "-";
-		const pad = (n: number) => (n < 10 ? `0${n}` : `${n}`);
-		return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(
-			d.getDate()
-		)} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-	}
-
-	function formatDateYMD(input?: string | number | Date) {
-		if (input === undefined || input === null || input === "") return "";
-		let date: Date;
-		if (input instanceof Date) date = input;
-		else if (typeof input === "number" || /^\d+$/.test(String(input))) {
-			date = new Date(Number(input));
-		} else {
-			date = new Date(String(input).replace(/-/g, "/"));
-		}
-		if (isNaN(date.getTime())) return "";
-		const pad = (n: number) => (n < 10 ? `0${n}` : `${n}`);
-		return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
-			date.getDate()
-		)}`;
 	}
 
 	function resolveCardLines(item: any) {
@@ -876,7 +833,7 @@ export function useOrderList() {
 			mtNo: item?.mtNo ?? "",
 			eqCode: item?.equipmentCode ?? "",
 			eqName: item?.equipmentName ?? "",
-		});
+		}, { skipEmpty: true });
 		uni.navigateTo({ url });
 	}
 	// 保养确定
@@ -944,7 +901,7 @@ export function useOrderList() {
 			id: String(orderId),
 			source: source.value,
 			mode: "repair",
-		});
+		}, { skipEmpty: true });
 		uni.navigateTo({ url });
 	}
 
@@ -959,14 +916,14 @@ export function useOrderList() {
 			const url = buildUrl("/pages/workOrderDetail/index", {
 				id: item?.id ?? "",
 				source: source.value,
-			});
+			}, { skipEmpty: true });
 			uni.navigateTo({ url });
 			return;
 		}
 		if (activeTabName.value === "b") {
 			const url = buildUrl("/pages/upkeepOrderDetail/index", {
 				id: item?.id ?? "",
-			});
+			}, { skipEmpty: true });
 			uni.navigateTo({ url });
 			return;
 		}
@@ -976,7 +933,7 @@ export function useOrderList() {
 			source: source.value,
 			equipmentModel: item?.equipmentModel ?? "",
 			isView: "1",
-		});
+		}, { skipEmpty: true });
 		uni.navigateTo({ url });
 	}
 
@@ -1276,6 +1233,14 @@ export function useOrderList() {
 					listRef.value.reload?.();
 				}
 			});
+	});
+
+	// 清理定时器，防止内存泄漏
+	onUnmounted(() => {
+		if (searchDebounceTimer.value) {
+			clearTimeout(searchDebounceTimer.value);
+			searchDebounceTimer.value = null;
+		}
 	});
 
 	return {

@@ -7,7 +7,7 @@
 		<view class="approval-popout">
 			<!-- 采用 CForm 承载结构化信息，便于后续扩展字段 -->
 			<CForm
-				ref="cFormRef"
+				ref="formRef"
 				v-model="formModel"
 				:schema="schemaRef"
 				v-if="visible"
@@ -56,9 +56,14 @@ import type {
 import SparePartSelector from "@/pages/maintainOrder/components/SparePartSelector.vue";
 import ChangePartsList from "@/pages/maintainOrder/components/ChangePartsList.vue";
 import CCard from "@/components/c-card/CCard.vue";
-import { ensurePicturePreviewUrl } from "@/utils/picture";
-import { getPartsManagementlist, selectPlanOrder } from "@/api/order";
+import { ensurePicturePreviewUrl, normalizePictureList } from "@/utils/picture";
+import { selectPlanOrder } from "@/api/order";
+import { formatDateTime } from "@/utils/date";
+import { pad } from "@/utils/format";
+import { toArray } from "@/utils/array";
+import { useSparePartManagement } from "@/composables/useSparePartManagement";
 const sparePartVisible = ref<boolean>(false);
+
 type BeforeCloseHandler = (
 	type: "confirm" | "cancel" | "close",
 	payload?: any
@@ -87,23 +92,29 @@ const props = withDefaults(
 	}
 );
 
-const cFormRef = ref<CFormExpose | null>(null);
+const formRef = ref<CFormExpose | null>(null);
 const repairRecords = ref<any[]>([]);
 
 const recordsLoading = ref(false);
 const emit = defineEmits<{
 	(e: "update:visible", value: boolean): void;
 }>();
+
 const visible = computed({
 	get: () => !!props.visible,
 	set: (value) => emit("update:visible", value),
 });
-const formRef = ref<CFormExpose | null>(null);
 const formModel = ref<TextareaPopoutForm>({
 	actualHour: "",
 	startTime: "",
 	finishTime: "",
 	jneSeSpareConnectionList: [],
+});
+
+// 使用备件管理 Hook
+const { fetchSpareOptions, removeSparePart, onSparePartConfirm } = useSparePartManagement({
+	formData: formModel,
+	fieldPath: 'jneSeSpareConnectionList',
 });
 
 // 计算保养工时默认值（repairRecords 中 upkeepTime 的累加）
@@ -143,7 +154,7 @@ watch(
 			if (isNaN(startDate.getTime())) return;
 
 			const finishDate = new Date(startDate.getTime() + minutes * 60 * 1000);
-			formModel.value.finishTime = formatDateTimeString(finishDate);
+			formModel.value.finishTime = formatDateTime(finishDate);
 		} catch (error) {
 			console.warn("[UpkeepPopout] 计算完成时间失败", error);
 		}
@@ -164,28 +175,20 @@ watch(
 			if (isNaN(startDate.getTime())) return;
 
 			const finishDate = new Date(startDate.getTime() + minutes * 60 * 1000);
-			formModel.value.finishTime = formatDateTimeString(finishDate);
+			formModel.value.finishTime = formatDateTime(finishDate);
 		} catch (error) {
 			console.warn("[UpkeepPopout] 计算完成时间失败", error);
 		}
 	}
 );
 
-function formatDateTimeString(date: Date): string {
-	const pad = (n: number) => (n < 10 ? `0${n}` : `${n}`);
-	return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
-		date.getDate()
-	)} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(
-		date.getSeconds()
-	)}`;
-}
 
 function resetForm() {
 	const now = new Date();
 	const defaultHour = defaultActualHour.value;
 	console.log(defaultHour, "defaultActualHour.value");
 
-	const startTimeStr = formatDateTimeString(now);
+	const startTimeStr = formatDateTime(now);
 	let finishTimeStr = "";
 
 	// 如果有默认工时，计算完成时间
@@ -193,7 +196,7 @@ function resetForm() {
 		const minutes = Number(defaultHour) || 0;
 		if (minutes > 0) {
 			const finishDate = new Date(now.getTime() + minutes * 60 * 1000);
-			finishTimeStr = formatDateTimeString(finishDate);
+			finishTimeStr = formatDateTime(finishDate);
 		}
 	}
 
@@ -206,89 +209,15 @@ function resetForm() {
 
 	// 使用 nextTick 确保表单已渲染
 	setTimeout(() => {
-		if (cFormRef.value?.setValue) {
-			cFormRef.value.setValue("actualHour", defaultHour);
-			cFormRef.value.setValue("startTime", startTimeStr);
-			cFormRef.value.setValue("finishTime", finishTimeStr);
+		if (formRef.value?.setValue) {
+			formRef.value.setValue("actualHour", defaultHour);
+			formRef.value.setValue("startTime", startTimeStr);
+			formRef.value.setValue("finishTime", finishTimeStr);
 		}
 	}, 100);
 }
 function openSparePartPop() {
 	sparePartVisible.value = true;
-}
-
-function onSparePartConfirm(payloadList: any) {
-	// 处理批量添加备件
-	if (!Array.isArray(payloadList) || !payloadList.length) {
-		console.warn("[UpkeepPopout] onSparePartConfirm: 无效的 payloadList");
-		return true;
-	}
-
-	const currentList = [];
-	payloadList.forEach((payload) => {
-		if (!payload || !payload.spareId) return;
-		currentList.push({
-			spareId: payload.spareId,
-			spareName: payload.spareName,
-			quantity: payload.quantity,
-			spareNum: payload.spareNum,
-		});
-	});
-
-	formModel.value.jneSeSpareConnectionList = currentList;
-	console.log("[UpkeepPopout] 备件已添加:", currentList.length);
-
-	// ⭐ 必须返回 true 表示成功
-	return true;
-}
-
-function removeSparePart(part: { spareId?: string }) {
-	const spareId = part?.spareId;
-	if (!spareId) return;
-
-	const list = formModel.value.jneSeSpareConnectionList;
-	if (!Array.isArray(list) || !list.length) return;
-
-	const nextList = list.filter(
-		(item: any) => String(item?.spareId ?? "") !== String(spareId)
-	);
-	if (nextList.length === list.length) return;
-
-	formModel.value.jneSeSpareConnectionList = nextList;
-}
-async function fetchSpareOptions() {
-	try {
-		const resp = await getPartsManagementlist({});
-
-		// 使用当前表单中的已选备件列表
-		const selectedMap = new Map(
-			(formModel.value.jneSeSpareConnectionList || []).map((item: any) => [
-				String(item.spareId || ""),
-				Number(item.spareNum) || 0,
-			])
-		);
-		const result = resp
-			.map((item: any) => {
-				const value = String(item?.id || item?.materialCode || "");
-				if (!value) return null;
-				const label = item?.spareName || item?.materialName || "";
-				if (!label) return null;
-				const baseQty = Number(item?.spareNum || item?.quantity || 1);
-				const quantity = Number.isFinite(baseQty) && baseQty > 0 ? baseQty : 1;
-				const selectedQty = selectedMap.get(value) || 0;
-				return {
-					spareId: value,
-					spareName: label,
-					quantity,
-					spareNum: selectedQty,
-				};
-			})
-			.filter(Boolean);
-		return result;
-	} catch (error) {
-		console.warn("[UpkeepOrder] fetchSpareOptions failed", error);
-		return [];
-	}
 }
 const buildFieldsComputed = computed<CFormSchemaField[]>(() => {
 	return [
@@ -388,11 +317,6 @@ async function loadRepairRecords(id: string) {
 	}
 }
 
-function toArray(input: any): any[] {
-	if (!input) return [];
-	return Array.isArray(input) ? input : [input];
-}
-
 function resolveRepairLines(record: any) {
 	const lines: any[] = [];
 	const addLine = (label: string, raw: any) => {
@@ -427,20 +351,6 @@ function formatChangeParts(record: any) {
 	return parts.join("；");
 }
 
-function normalizePictureList(raw: any) {
-	if (!raw) return [];
-	if (Array.isArray(raw)) {
-		return raw.map((item) => ensurePicturePreviewUrl(item)).filter(Boolean);
-	}
-	if (typeof raw === "string") {
-		return raw
-			.split(/[;,]/)
-			.map((item) => ensurePicturePreviewUrl(item.trim()))
-			.filter(Boolean);
-	}
-	return [ensurePicturePreviewUrl(raw)].filter(Boolean);
-}
-
 function unwrapRecordList(raw: any): any[] {
 	if (!raw) return [];
 	if (Array.isArray(raw)) return raw;
@@ -465,7 +375,7 @@ async function handleBeforeClose(type: "confirm" | "cancel" | "close") {
 	if (type !== "confirm") {
 		return true;
 	}
-	const form = cFormRef.value;
+	const form = formRef.value;
 	if (form?.validate) {
 		const ok = await form.validate();
 		if (!ok) return Promise.reject(false);
@@ -489,8 +399,6 @@ async function handleBeforeClose(type: "confirm" | "cancel" | "close") {
 	gap: 16px;
 	padding: 16px 20px 24px 20px !important;
 	box-sizing: border-box;
-	max-height: 70vh;
-	overflow-y: auto;
 }
 
 .approval-popout__form {

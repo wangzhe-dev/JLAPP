@@ -2,7 +2,7 @@
 	<PageLayout title="异常上报" :show-back="true">
 		<view class="er-page">
 			<CForm
-				ref="cFormRef"
+				ref="formRef"
 				v-model="form"
 				:schema="schemaRef"
 				@submit="handleSubmit"
@@ -65,14 +65,16 @@ import { EXCEPTION_LIST_REFRESH_KEY } from "@/pages/exceptionManagement/constant
 import PageLayout from "@/components/c-page-layout/PageLayout.vue";
 import { CForm } from "@/components/c-form";
 import CCard from "@/components/c-card/CCard.vue";
-import type { CFormSchema } from "@/components/c-form/types";
+import type { CFormSchema, CFormExpose } from "@/components/c-form/types";
 import { WORK_ORDER_PICK_RESULT_CACHE_KEY } from "@/utils/picker";
+import { formatDateTime } from "@/utils/date";
+import { normalizePictureList, ensurePicturePreviewUrl, stripPictureBaseUrl } from "@/utils/picture";
 
 // ====== 表单基础状态 ======
 // form 内部约定：_mode: 'create' | 'edit' | 'view'; _locks: Record<string,1>
 // 允许外部页面通过路由参数预置：mode, id, prefill(json/base64), locks(逗号分隔字段)
 const form = ref<any>({ _mode: "create", _locks: {} });
-const cFormRef = ref<any>();
+const formRef = ref<CFormExpose | null>(null);
 const isViewMode = computed(() => form.value._mode === "view");
 const managementRecords = computed(() => {
 	const list = form.value?.managementRecordList;
@@ -312,111 +314,17 @@ function joinWithSlash(base: string | undefined, suffix: string): string {
 const FILE_UPLOAD_URL = joinWithSlash(requestUrl, "/file/upload");
 const FILE_PREVIEW_BASE_SOURCE = minioBaseUrl || requestUrl || "";
 const FILE_PREVIEW_BASE = FILE_PREVIEW_BASE_SOURCE.replace(/\/+$/, "");
-const FILE_PREVIEW_PROTOCOL =
-	FILE_PREVIEW_BASE.match(/^[a-z]+:/i)?.[0] || "https:";
-const FILE_PREVIEW_BASE_CANDIDATES = Array.from(
-	new Set(
-		[
-			FILE_PREVIEW_BASE,
-			FILE_PREVIEW_BASE_SOURCE,
-			minioBaseUrl,
-			requestUrl,
-			imgUrl,
-		]
-			.filter((base: string | undefined | null): base is string => !!base)
-			.map((base) => base.replace(/\/+$/, ""))
-	)
-);
-const FILE_PREVIEW_LEGACY_BASES = Array.from(
-	new Set(
-		[imgUrl, requestUrl]
-			.filter((base: string | undefined | null): base is string => !!base)
-			.map((base) => base.replace(/\/+$/, ""))
-	)
-);
-
-function ensurePicturePreviewUrl(entry: any): string {
-	if (!entry) return "";
-	let raw = "";
-	if (typeof entry === "string") raw = entry;
-	else if (typeof entry === "object") {
-		raw =
-			entry.resultUrl ||
-			entry.url ||
-			entry.fileUrl ||
-			entry.thumb ||
-			entry.path ||
-			entry.filepath ||
-			"";
-	}
-	if (!raw) return "";
-	const trimmed = String(raw).trim();
-	if (!trimmed) return "";
-	if (
-		/^(?:data:|blob:|file:|wxfile:|http:\/\/tmp|https:\/\/tmp)/i.test(trimmed)
-	)
-		return trimmed;
-	if (/^\/(?:_doc|_downloads|_www|storage|private)/i.test(trimmed))
-		return trimmed;
-	if (/^\/\//.test(trimmed)) return `${FILE_PREVIEW_PROTOCOL}${trimmed}`;
-	if (/^(?:https?:|wss?:|ftp:)/i.test(trimmed)) {
-		if (FILE_PREVIEW_BASE) {
-			for (const legacy of FILE_PREVIEW_LEGACY_BASES) {
-				if (legacy && trimmed.startsWith(legacy)) {
-					const relative = trimmed.slice(legacy.length).replace(/^\/+/, "");
-					return `${FILE_PREVIEW_BASE.replace(/\/+$/, "")}/${relative}`;
-				}
-			}
-		}
-		return trimmed;
-	}
-	const base = FILE_PREVIEW_BASE;
-	if (!base) return trimmed;
-	const normalizedBase = base.replace(/\/+$/, "");
-	const normalizedPath = trimmed.replace(/^\/+/, "");
-	return `${normalizedBase}/${normalizedPath}`;
-}
-
-function stripPicturePreviewBase(raw: string): string {
-	if (!raw) return "";
-	let current = raw.trim();
-	if (!current) return "";
-	for (const base of FILE_PREVIEW_BASE_CANDIDATES) {
-		if (!base) continue;
-		if (current.startsWith(`${base}/`)) {
-			current = current.slice(base.length + 1);
-			break;
-		}
-		if (current.startsWith(base)) {
-			current = current.slice(base.length);
-			break;
-		}
-	}
-	for (const legacy of FILE_PREVIEW_LEGACY_BASES) {
-		if (!legacy) continue;
-		if (current.startsWith(`${legacy}/`)) {
-			current = current.slice(legacy.length + 1);
-			break;
-		}
-		if (current.startsWith(legacy)) {
-			current = current.slice(legacy.length);
-			break;
-		}
-	}
-	return current.replace(/^\/+/, "");
-}
-
 function queueFieldSync() {
 	if (fieldSyncScheduled) return;
 	fieldSyncScheduled = true;
 	nextTick().then(() => {
 		fieldSyncScheduled = false;
-		if (!cFormRef.value?.setValue) return;
+		if (!formRef.value?.setValue) return;
 		const toSync = Array.from(pendingFieldSync);
 		pendingFieldSync.clear();
 		toSync.forEach((prop) => {
 			try {
-				cFormRef.value.setValue(prop, form.value[prop]);
+				formRef.value.setValue(prop, form.value[prop]);
 			} catch (e) {
 				// ignore individual field sync errors
 			}
@@ -425,7 +333,7 @@ function queueFieldSync() {
 }
 
 watch(
-	() => cFormRef.value,
+	() => formRef.value,
 	(val) => {
 		if (val && pendingFieldSync.size) queueFieldSync();
 	}
@@ -498,36 +406,13 @@ function normalizeRouteParams(raw: Record<string, any> | undefined | null) {
 	return out;
 }
 
+/**
+ * 标准化日期时间格式
+ * 使用统一的 formatDateTime 工具，但保留空值
+ */
 function normalizeDateTime(value: any) {
 	if (value == null || value === "") return value;
-	if (typeof value === "string" && /\d{4}-\d{2}-\d{2}/.test(value))
-		return value;
-	const d = new Date(value);
-	if (isNaN(d.getTime())) return value;
-	const pad = (n: number) => (n < 10 ? "0" + n : "" + n);
-	return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(
-		d.getHours()
-	)}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
-}
-
-function normalizePictureList(input: any) {
-	if (!input) return [];
-	let list: any[] = [];
-	if (Array.isArray(input)) list = input;
-	else if (typeof input === "string")
-		list = input
-			.split(/[,;]/)
-			.map((s) => s.trim())
-			.filter(Boolean);
-	else list = [input];
-	const normalized = list
-		.map((item) => ensurePicturePreviewUrl(item))
-		.filter(Boolean);
-	const unique: string[] = [];
-	normalized.forEach((url) => {
-		if (!unique.includes(url)) unique.push(url);
-	});
-	return unique;
+	return formatDateTime(value, { emptyValue: value });
 }
 
 async function applyStoredFormData(afterDetail = false) {
@@ -828,7 +713,7 @@ function onFieldChange(prop: string, value: any) {
 
 async function submit(options: { isSubmit?: number } = {}) {
 	if (form.value._mode === "view") return; // 查看模式不提交
-	const valid = await cFormRef.value?.validate?.();
+	const valid = await formRef.value?.validate?.();
 	if (!valid) return;
 	const payload = await buildSubmitPayload(options);
 	handleSubmit(payload);
@@ -846,8 +731,8 @@ function buildSubmitPayload(options: { isSubmit?: number } = {}) {
 		const cleaned = payload.exceptionPictureUrl
 			.map((u: any) => {
 				if (u == null) return "";
-				if (typeof u === "string") return stripPicturePreviewBase(u);
-				return stripPicturePreviewBase(ensurePicturePreviewUrl(u));
+				if (typeof u === "string") return stripPictureBaseUrl(u);
+				return stripPictureBaseUrl(ensurePicturePreviewUrl(u));
 			})
 			.map((u: string) => u.trim())
 			.filter((u: string) => u !== "");

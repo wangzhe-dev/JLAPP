@@ -346,12 +346,12 @@ async function handlePopConfirm(type: "confirm" | "cancel" | "close") {
 		return true;
 	}
 
-	if (submitting.value) return Promise.reject(false);
+	if (submitting.value) return false;
 
 	// 验证选中项
 	if (!innerSelected.value.length) {
 		toast("请选择备件");
-		return Promise.reject(false);
+		return false;
 	}
 
 	// 验证所有选中项都有数量
@@ -383,7 +383,7 @@ async function handlePopConfirm(type: "confirm" | "cancel" | "close") {
 		const maxAvailable = Number(option.quantity ?? 0);
 		if (qty > maxAvailable) {
 			toast(`${option.spareName} 数量不能超过 ${maxAvailable}`);
-			return Promise.reject(false);
+			return false;
 		}
 
 		payloadList.push({
@@ -405,12 +405,12 @@ async function handlePopConfirm(type: "confirm" | "cancel" | "close") {
 
 	if (invalidItems.length > 0) {
 		toast(`请填写以下备件的数量：${invalidItems.join("、")}`);
-		return Promise.reject(false);
+		return false;
 	}
 
 	if (!payloadList.length) {
 		toast("请选择备件并填写数量");
-		return Promise.reject(false);
+		return false;
 	}
 
 	// 调用 confirm 回调
@@ -426,8 +426,8 @@ async function handlePopConfirm(type: "confirm" | "cancel" | "close") {
 			}
 		} catch (error) {
 			console.error("[SparePartSelector] confirm failed", error);
-			return Promise.reject(false);
-		} finally {
+			return false;
+		} finally{
 			submitting.value = false;
 		}
 	}

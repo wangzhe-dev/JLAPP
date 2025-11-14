@@ -91,12 +91,15 @@ import SparePartSelector from "../maintainOrder/components/SparePartSelector.vue
 import { buildUpkeepFormFields } from "./upkeepFormSchema";
 import {
 	selectPlanOrder,
-	getPartsManagementlist,
 	submitOrder,
 } from "@/api/order";
+import { useSparePartManagement } from "@/composables/useSparePartManagement";
 import { queryDictList } from "@/api/dict";
 import { resolveStatusState } from "@/utils/status";
-import { ensurePicturePreviewUrl } from "@/utils/picture";
+import { ensurePicturePreviewUrl, normalizePictureList } from "@/utils/picture";
+import { formatDateTime } from "@/utils/date";
+import { pad } from "@/utils/format";
+import { toArray } from "@/utils/array";
 
 const pageTitle = ref("填写保养记录");
 const submitButtonText = ref("提交保养记录");
@@ -106,6 +109,7 @@ const loading = ref<boolean>(true);
 const submitting = ref<boolean>(false);
 const id = ref<string>("");
 const source = ref<string>("1");
+const formMode = ref<"repair" | "again">("repair");
 
 const statusDict = ref<Record<string, string>>({});
 const sparePartVisible = ref<boolean>(false);
@@ -130,6 +134,12 @@ const form = ref<Record<string, any>>({
 });
 
 const planItemsRaw = ref<any[]>([]);
+
+// 使用备件管理 Hook
+const { fetchSpareOptions, removeSparePart, onSparePartConfirm } = useSparePartManagement({
+	formData: form,
+	fieldPath: 'upkeepFormData.changeParts',
+});
 
 const schemaRef = computed<CFormSchema>(() => ({
 	labelWidth: "240rpx",
@@ -378,37 +388,6 @@ function refreshStatusName() {
 	if (label) form.value.statusName = label;
 }
 
-function toArray<T>(input: T | T[] | null | undefined): T[] {
-	if (!input) return [];
-	return Array.isArray(input) ? input : [input];
-}
-
-function normalizePictureList(raw: any): Array<{ id: string; src: string }> {
-	const list = toArray(raw)
-		.flatMap((item: any) => {
-			if (!item) return [];
-			if (typeof item === "string")
-				return item
-					.split(/[,;]/)
-					.map((s) => s.trim())
-					.filter(Boolean);
-			return [
-				item.url ||
-					item.src ||
-					item.path ||
-					item.pictureUrl ||
-					item.imageUrl ||
-					item,
-			];
-		})
-		.map((item, index) => ({
-			id: `${index}`,
-			src: ensurePicturePreviewUrl(item),
-		}))
-		.filter((item) => !!item.src);
-	return list;
-}
-
 function diffMinutes(start: any, end: any): number {
 	const s = new Date(start);
 	const e = new Date(end);
@@ -418,19 +397,6 @@ function diffMinutes(start: any, end: any): number {
 	return Math.round(diff / 60000);
 }
 
-function formatDateTime(value: any) {
-	if (!value && value !== 0) return "";
-	if (typeof value === "string" && /\d{4}-\d{2}-\d{2}/.test(value))
-		return value;
-	const date = new Date(value);
-	if (Number.isNaN(date.getTime())) return String(value ?? "");
-	const pad = (num: number) => (num < 10 ? `0${num}` : `${num}`);
-	return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
-		date.getDate()
-	)} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(
-		date.getSeconds()
-	)}`;
-}
 
 function formatDuration(value: any) {
 	if (value === undefined || value === null || value === "") return "";
@@ -485,55 +451,6 @@ function onSparePartChange(entry: any) {
 		});
 	}
 	updateUpkeepFormField("changeParts", upkeepForm.changeParts);
-}
-
-function onSparePartConfirm(payload: any) {
-	onSparePartChange(payload);
-	console.log('[UpkeepOrder] 备件已确认');
-	
-	// ⭐ 必须返回 true 表示成功
-	return true;
-}
-
-function removeSparePart(part: { spareId: string }) {
-	const upkeepForm = ensureUpkeepForm();
-	upkeepForm.changeParts = upkeepForm.changeParts.filter(
-		(item) => item.spareId !== part.spareId
-	);
-	updateUpkeepFormField("changeParts", upkeepForm.changeParts);
-}
-
-async function fetchSpareOptions() {
-	try {
-		const resp = await getPartsManagementlist({});
-
-		const selectedMap = new Map(
-			(ensureUpkeepForm().changeParts || []).map((item: any) => [
-				String(item.spareId || ""),
-				Number(item.spareNum) || 1,
-			])
-		);
-		return resp
-			.map((item: any) => {
-				const value = String(item?.id || item?.materialCode || "");
-				if (!value) return null;
-				const label = item?.spareName || item?.materialName || "";
-				if (!label) return null;
-				const baseQty = Number(item?.spareNum || item?.quantity || 1);
-				const quantity = Number.isFinite(baseQty) && baseQty > 0 ? baseQty : 1;
-				const selectedQty = selectedMap.get(value) || 0;
-				return {
-					spareId: value,
-					spareName: label,
-					quantity,
-					spareNum: selectedQty,
-				};
-			})
-			.filter(Boolean);
-	} catch (error) {
-		console.warn("[UpkeepOrder] fetchSpareOptions failed", error);
-		return [];
-	}
 }
 
 function handleFieldChange(prop: string, value: any) {

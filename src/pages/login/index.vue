@@ -347,7 +347,7 @@ onMounted(() => {
 	margin-top: 16rpx;
 	font-size: 26rpx;
 	color: #5a6a8f;
-	margin: 0 20px;
+	margin: 0 40rpx;
 }
 .submit-btn {
 	margin-top: 44rpx;

@@ -46,7 +46,7 @@
 					class="exl-card"
 					:title="item.title || '-'"
 					:subtitle="item.callPName || ''"
-					:extra="formatTime(item.handleTime)"
+					:extra="formatDateTime(item.handleTime)"
 					:variant="'elevated'"
 					:content="
 						item.exceptionDesc + (item.solution ? '--' + item.solution : '')
@@ -62,13 +62,15 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, nextTick, watch } from "vue";
+import { ref, reactive, nextTick, onBeforeUnmount } from "vue";
 import PageLayout from "@/components/c-page-layout/PageLayout.vue";
 import CTabs from "@/components/c-tabs/CTabs.vue";
 import PullList from "@/components/pull-list/PullList.vue";
 import CCard from "@/components/c-card/CCard.vue";
 // import cSearch from '@/components/c-form/fields/Search.vue';
 import { knowledgeSearch } from "@/api/exception";
+import { formatDateTime } from "@/utils/date";
+import { pad } from "@/utils/format";
 
 const rangeTabs = ref([
 	{ name: "", title: "全部" },
@@ -105,90 +107,89 @@ function triggerReload() {
 	});
 }
 
-function onRangeChangeTab(payload: { name: string; index: number }) {
-	formData.dateRange = payload.name;
+// 统一的搜索逻辑 - 立即更新query并重新加载
+function performSearch() {
 	query.value = {
 		dateRange: formData.dateRange,
 		keyword: formData.keyword,
 	};
 	triggerReload();
 }
+
+// 页签切换 - 立即执行搜索，不需要防抖
+function onRangeChangeTab(payload: { name: string; index: number }) {
+	formData.dateRange = payload.name;
+	performSearch();
+}
+
 function onFocus() {
 	showAction.value = false;
 }
+
+// 统一的防抖定时器
 let searchTimer: ReturnType<typeof setTimeout> | null = null;
-function onSearch() {
+const SEARCH_DEBOUNCE_MS = 300;
+
+// 防抖搜索函数 - 用于输入过程中的搜索
+function debouncedSearch() {
 	if (searchTimer) clearTimeout(searchTimer);
 	searchTimer = setTimeout(() => {
-		query.value = {
-			dateRange: formData.dateRange,
-			keyword: formData.keyword,
-		};
-		triggerReload();
+		performSearch();
 		searchTimer = null;
-	}, 300);
+	}, SEARCH_DEBOUNCE_MS);
 }
 
-// 点击搜索/回车确认
+// 点击搜索/回车确认 - 立即执行
 function onConfirm(value: string) {
-	const changed = updateKeyword(value ?? "");
-	if (!changed) {
-		triggerReload();
-		return;
+	updateKeyword(value ?? "");
+	// 取消防抖，立即执行
+	if (searchTimer) {
+		clearTimeout(searchTimer);
+		searchTimer = null;
 	}
-	query.value = {
-		dateRange: formData.dateRange,
-		keyword: formData.keyword,
-	};
-	triggerReload();
+	performSearch();
 }
 
-// 点击清除按钮
+// 点击清除按钮 - 立即执行
 function onClear() {
-	const changed = updateKeyword("");
-	if (!changed) {
-		triggerReload();
-		return;
+	updateKeyword("");
+	// 取消防抖，立即执行
+	if (searchTimer) {
+		clearTimeout(searchTimer);
+		searchTimer = null;
 	}
-	query.value = {
-		dateRange: formData.dateRange,
-		keyword: "",
-	};
-	triggerReload();
+	performSearch();
 }
 
-// v-model 同步回调（保证所有更新路径都能触发搜索）
+// v-model 同步回调 - 使用防抖
 function onModelUpdate(v: string) {
 	if (!updateKeyword(v ?? "")) return;
-	onSearch();
-}
-// 某些版本仅触发 change（失焦或输入确认）
-function onChange(v: string) {
-	if (!updateKeyword(v ?? "")) return;
-	onSearch();
-}
-// 取消时重置为全部
-function onCancel() {
-	if (!updateKeyword("")) return;
-	onSearch();
+	debouncedSearch();
 }
 
-// v-model 兜底监听，防止遗漏输入路径（与防抖共享计时器）
-watch(
-	() => formData.keyword,
-	(val, oldVal) => {
-		if (val === oldVal) return;
-		if (searchTimer) clearTimeout(searchTimer);
-		searchTimer = setTimeout(() => {
-			query.value = {
-				dateRange: formData.dateRange,
-				keyword: val ?? "",
-			};
-			triggerReload();
-			searchTimer = null;
-		}, 200);
+// 某些版本仅触发 change - 使用防抖
+function onChange(v: string) {
+	if (!updateKeyword(v ?? "")) return;
+	debouncedSearch();
+}
+
+// 取消时重置为全部 - 立即执行
+function onCancel() {
+	if (!updateKeyword("")) return;
+	if (searchTimer) {
+		clearTimeout(searchTimer);
+		searchTimer = null;
 	}
-);
+	performSearch();
+}
+
+// 组件卸载时清理定时器
+onBeforeUnmount(() => {
+	if (searchTimer) {
+		clearTimeout(searchTimer);
+		searchTimer = null;
+	}
+})
 
 function viewDetail(item: any) {
 	const rawId = item.id;
@@ -197,19 +198,6 @@ function viewDetail(item: any) {
 	uni.navigateTo({
 		url: `/pages/libraryDetail/index?id=${encodeURIComponent(id)}`,
 	});
-}
-function formatTime(v?: string | number) {
-	if (v === undefined || v === null || v === "") return "-";
-	const d = new Date(
-		typeof v === "number" || /^\d+$/.test(String(v))
-			? Number(v)
-			: String(v).replace(/-/g, "/")
-	);
-	if (isNaN(d.getTime())) return "-";
-	const pad = (n: number) => (n < 10 ? "0" + n : "" + n);
-	return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(
-		d.getHours()
-	)}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
 }
 async function request(params: {
 	page: number;

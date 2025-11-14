@@ -33,6 +33,9 @@ import CCard from "@/components/c-card/CCard.vue";
 import { selectPlanOrder } from "@/api/order";
 import { queryDictList } from "@/api/dict";
 import { resolveStatusState } from "@/utils/status";
+import { formatDateTime } from "@/utils/date";
+import { pad } from "@/utils/format";
+import { toArray } from "@/utils/array";
 
 const loading = ref(true);
 const formData = ref<Record<string, any>>({});
@@ -281,20 +284,6 @@ function mapDictItems(list: any[]) {
 	}, {} as Record<string, string>);
 }
 
-function toArray(source: any): any[] {
-	if (!source) return [];
-	if (Array.isArray(source)) return source;
-	if (typeof source === "string") {
-		try {
-			const parsed = JSON.parse(source);
-			return Array.isArray(parsed) ? parsed : [];
-		} catch (error) {
-			return [];
-		}
-	}
-	return [];
-}
-
 function createLine(label: string, value: any) {
 	if (value === undefined || value === null || value === "") return null;
 	return { label, value: String(value) };
@@ -315,15 +304,6 @@ function hasAnyEquipmentInfo() {
 	);
 }
 
-function formatDateTime(value: any) {
-	if (!value && value !== 0) return "-";
-	const date = new Date(value);
-	if (Number.isNaN(date.getTime())) return String(value);
-	const pad = (n: number) => (n < 10 ? `0${n}` : `${n}`);
-	return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
-		date.getDate()
-	)} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
 </script>
 
 <style scoped lang="scss">

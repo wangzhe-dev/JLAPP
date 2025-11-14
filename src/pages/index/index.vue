@@ -500,14 +500,7 @@ function goMessage() {
 	navigateToWithGuard("/pages/message/index");
 }
 
-const DEPRECATED_SECOND_LEVEL = new Set<string>([
-	"/pages/exceptionManagement/index",
-	"/pages/inspectionPlan/index",
-	"/pages/qualityControl/index",
-	"/pages/controlManagement/index",
-]);
 function goPages(path: string, params: Record<string, any> = {}) {
-	if (DEPRECATED_SECOND_LEVEL.has(path)) return;
 	if (path === "/pages/eqManagement/repair/index") {
 		const merged = { mode: "add", ...params };
 		navigateToWithGuard(path, { params: merged });

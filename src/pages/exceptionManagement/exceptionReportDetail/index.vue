@@ -48,8 +48,9 @@ import type {
 	CFormSchemaField,
 } from "@/components/c-form/types";
 import CCard from "@/components/c-card/CCard.vue";
-import { ensurePicturePreviewUrl } from "@/utils/picture";
+import { ensurePicturePreviewUrl, normalizePictureList } from "@/utils/picture";
 import { formatDate } from "sard-uniapp";
+import { formatDateTime } from "@/utils/date";
 const formRef = ref<CFormExpose | null>(null);
 const loading = ref<boolean>(false);
 const form = ref<Record<string, any>>({ buttonPermissionList: [] });
@@ -173,30 +174,9 @@ function buildFields(): CFormSchemaField[] {
 	];
 }
 
-function formatDateTime(
-	v?: string | number,
-	formatter = "YYYY-MM-DD HH:mm:ss"
-): string {
-	return v ? formatDate(new Date(v), formatter) : "-";
-}
 function formatRecordTime(record: any) {
 	const raw = record?.createdTime || "-";
 	return formatDateTime(raw);
-}
-
-function normalizePictureList(raw: any) {
-	if (!raw) return [];
-	const list = Array.isArray(raw)
-		? raw
-		: String(raw)
-				.replace(/,$/, "")
-				.split(/[,;]/)
-				.map((item) => item.trim())
-				.filter(Boolean);
-	return list.map((item, index) => ({
-		id: `${index}`,
-		src: ensurePicturePreviewUrl(item),
-	}));
 }
 
 async function loadDetail(id: string) {
@@ -217,10 +197,9 @@ async function loadDetail(id: string) {
 				: [],
 			exceptionPictureList: normalizePictureList(data?.exceptionPictureUrl),
 			createdTime: formatDateTime(data?.createdTime),
-			expectedResolutionTime: formatDateTime(
-				data?.expectedResolutionTime,
-				"YYYY-MM-DD"
-			),
+			expectedResolutionTime: formatDateTime(data?.expectedResolutionTime, {
+				includeTime: false,
+			}),
 		};
 		form.value = next;
 	} catch (error) {

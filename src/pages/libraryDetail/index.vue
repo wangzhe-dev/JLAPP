@@ -2,6 +2,12 @@
 	<PageLayout title="知识库详情" :show-back="true">
 		<view class="lib-page">
 			<view v-if="loading" class="lib-loading">详情加载中...</view>
+			<view v-else-if="error" class="lib-error">
+				<view class="error-message">{{ error }}</view>
+				<sar-button @tap="retryLoad" type="primary" size="medium">
+					重试
+				</sar-button>
+			</view>
 			<view v-else class="lib-body">
 				<CForm v-model="form" :schema="schemaRef">
 					<template #exceptionPictures>
@@ -25,13 +31,16 @@ import { CForm } from "@/components/c-form";
 import type { CFormSchema, CFormSchemaField } from "@/components/c-form/types";
 import ImageGrid from "@/components/image-grid/ImageGrid.vue";
 import { findDetailsById } from "@/api/exception";
-import { ensurePicturePreviewUrl } from "@/utils/picture";
+import { ensurePicturePreviewUrl, normalizePictureList } from "@/utils/picture";
+import { formatDateTime } from "@/utils/date";
 
 const loading = ref<boolean>(false);
+const error = ref<string | null>(null);
 const form = ref<Record<string, any>>({});
 const exceptionPictures = ref<Array<{ id: string; src: string }>>([]);
 const scenePictures = ref<Array<{ id: string; src: string }>>([]);
 const detailId = ref<string>("");
+let abortController: AbortController | null = null;
 
 const schemaRef = computed<CFormSchema>(() => ({
 	layout: "vertical",
@@ -158,37 +167,16 @@ function buildFields(): CFormSchemaField[] {
 	];
 }
 
-function formatDateTime(value: any) {
-	if (!value && value !== 0) return "-";
-	if (typeof value === "string" && value.includes("-") && value.length >= 10)
-		return value;
-	const date = new Date(value);
-	if (Number.isNaN(date.getTime())) return String(value ?? "");
-	const pad = (n: number) => (n < 10 ? `0${n}` : `${n}`);
-	return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
-		date.getDate()
-	)} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(
-		date.getSeconds()
-	)}`;
-}
-
-function normalizePictureList(raw: any) {
-	if (!raw) return [];
-	const list = Array.isArray(raw)
-		? raw
-		: String(raw)
-			.replace(/,$/, "")
-			.split(/[,;]/)
-			.map((item) => item.trim())
-			.filter(Boolean);
-	return list.map((item, index) => ({
-		id: `${index}`,
-		src: ensurePicturePreviewUrl(item),
-	}));
-}
-
 async function loadDetail(id: string) {
+	// 取消之前的请求
+	if (abortController) {
+		abortController.abort();
+	}
+	abortController = new AbortController();
+
 	loading.value = true;
+	error.value = null;
+
 	try {
 		const resp: any = await findDetailsById({ id });
 		const data = resp?.data || resp || {};
@@ -199,11 +187,25 @@ async function loadDetail(id: string) {
 			createdTime: formatDateTime(data?.createdTime),
 			expectedResolutionTime: formatDateTime(data?.expectedResolutionTime),
 		};
-	} catch (error) {
-		console.warn("[libraryDetail] load detail failed", error);
-		uni.showToast({ title: "详情加载失败", icon: "none" });
+		abortController = null;
+	} catch (e: any) {
+		// 忽略中止错误
+		if (e.name === 'AbortError' || e.errMsg?.includes('abort')) {
+			console.log("[libraryDetail] request aborted");
+			return;
+		}
+
+		const errorMsg = e?.msg || e?.message || "详情加载失败";
+		error.value = errorMsg;
+		console.error("[libraryDetail] load detail failed", e);
 	} finally {
 		loading.value = false;
+	}
+}
+
+function retryLoad() {
+	if (detailId.value) {
+		loadDetail(detailId.value);
 	}
 }
 
@@ -235,5 +237,21 @@ onLoad((options: Record<string, any>) => {
 	padding: 48px 16px;
 	text-align: center;
 	color: #9ca3af;
+}
+
+.lib-error {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	padding: 100px 32px;
+	gap: 20px;
+
+	.error-message {
+		color: #ff4d4f;
+		font-size: 14px;
+		text-align: center;
+		line-height: 1.6;
+	}
 }
 </style>

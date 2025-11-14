@@ -2,6 +2,26 @@ import type { Ref } from 'vue'
 
 export type FormValidateTrigger = 'change' | 'blur' | 'submit'
 
+/**
+ * 选项项类型
+ * 用于字典和异步选项
+ */
+export interface OptionItem {
+  label: string
+  value: string | number
+  raw?: any
+}
+
+/**
+ * 表单引用类型
+ * sard-uniapp表单组件实例
+ */
+export interface FormRefType {
+  validate: (callback?: (valid: boolean, errors: any) => void) => Promise<void>
+  clearValidate: (props?: string | string[]) => void
+  reset: () => void
+}
+
 export interface CFormRule {
   required?: boolean
   message?: string

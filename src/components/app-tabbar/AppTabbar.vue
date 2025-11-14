@@ -23,19 +23,19 @@
 </template>
 <script lang="ts" setup>
 // @ts-nocheck 暂时关闭严格类型校验，待内置标签类型统一调整后移除此行
-import { computed, withDefaults, defineProps, defineEmits, watch, ref, onMounted, nextTick } from 'vue'
+import { computed, withDefaults, defineProps, defineEmits, watch, ref, onMounted, onBeforeUnmount, nextTick } from 'vue'
 import type { AppTabItem } from '@/config/tabbar'
 
-const props = withDefaults(defineProps<{ 
+const props = withDefaults(defineProps<{
   tabs: AppTabItem[]
   modelValue?: string
   safeArea?: boolean
   background?: string
   blur?: boolean
   transparent?: boolean
-  iconSize?: number
-  labelSize?: number
-  height?: number
+  iconSize?: number | string
+  labelSize?: number | string
+  height?: number | string
 }>(), {
   tabs: () => [],
   safeArea: true,
@@ -44,7 +44,7 @@ const props = withDefaults(defineProps<{
   transparent: false,
   iconSize: 26,
   labelSize: 16,
-  height: 88
+  height: 70
 })
 
 const emits = defineEmits<{ (e:'update:modelValue', v:string):void; (e:'change', v:AppTabItem):void }>()
@@ -79,22 +79,34 @@ const safeBottomCss = computed(() => {
     : 'env(safe-area-inset-bottom, 0px)'
 })
 
+function normalizeSize(value: number | string | undefined, defaultValue: number): string {
+  if (value === undefined || value === null) return `${defaultValue}px`
+  if (typeof value === 'number') return `${value}px`
+  const str = String(value).trim()
+  // If already has unit, use as-is; otherwise append px
+  return /^\d+(\.\d+)?(px|rpx|rem|em|vh|vw|%)$/.test(str) ? str : `${str}px`
+}
+
 const wrapperStyle = computed(() => {
+  const heightValue = normalizeSize(props.height, 70)
+  const labelSizeValue = normalizeSize(props.labelSize, 16)
+  const iconSizeValue = normalizeSize(props.iconSize, 26)
+
   const styles: string[] = [
-    `--sar-tabbar-height:${props.height}px`,
+    `--sar-tabbar-height:${heightValue}`,
     `--sar-tabbar-bg:${props.transparent ? 'transparent' : props.background}`,
     `--sar-tabbar-color:${inactiveColor.value}`,
-    `--sar-tabbar-item-ative-color:${activeColor.value}`,
+    `--sar-tabbar-item-active-color:${activeColor.value}`,
     `--sar-tabbar-border-color:rgba(0,0,0,0)`,
-    `--sar-tabbar-item-text-font-size:${props.labelSize}px`,
-    `--sar-tabbar-item-icon-font-size:${props.iconSize}px`,
+    `--sar-tabbar-item-text-font-size:${labelSizeValue}`,
+    `--sar-tabbar-item-icon-font-size:${iconSizeValue}`,
     `left:0`,
     `right:0`,
     `bottom:0`,
     `position:fixed`,
     `z-index:500`,
     `padding-bottom:${safeBottomCss.value}`,
-    `height:calc(${props.height}px + ${safeBottomCss.value})`,
+    `height:calc(${heightValue} + ${safeBottomCss.value})`,
     `border-top-left-radius:20px`,
     `border-top-right-radius:20px`,
     `overflow:hidden`,
@@ -159,7 +171,7 @@ function normalizePath(path?: string, withSlash = false) {
   return trimmed.startsWith('/') ? trimmed : trimmed
 }
 
-onMounted(() => {
+function updateSafeArea() {
   try {
     const info = uni.getSystemInfoSync()
     const toNumber = (value: any) => {
@@ -187,7 +199,25 @@ onMounted(() => {
       }
     }
     safeAreaBottom.value = bottom
-  } catch {}
+  } catch (error) {
+    console.warn('[AppTabbar] updateSafeArea error:', error)
+  }
+}
+
+onMounted(() => {
+  updateSafeArea()
+
+  // Listen for window resize events (including orientation changes)
+  uni.onWindowResize(() => {
+    updateSafeArea()
+  })
+})
+
+onBeforeUnmount(() => {
+  // Clean up window resize listener
+  uni.offWindowResize(() => {
+    updateSafeArea()
+  })
 })
 </script>
 <style lang="scss" scoped>

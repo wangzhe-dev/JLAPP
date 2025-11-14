@@ -416,7 +416,7 @@ function createDefaultForm(): InspectForm {
 	return {
 		equipmentName: "",
 		equipmentCode: "",
-		checkTime: formatDate(new Date(), "YYYY-MM-DD ss:HH:mm"),
+		checkTime: formatDate(new Date(), "YYYY-MM-DD HH:mm:ss"),
 		items: [],
 	};
 }
@@ -573,8 +573,6 @@ async function handleBeforeClose(type: "confirm" | "cancel" | "close") {
 	gap: 16px;
 	padding: 16px 20px 24px;
 	box-sizing: border-box;
-	max-height: 70vh;
-	overflow-y: auto;
 }
 
 .inspect-popout__form {

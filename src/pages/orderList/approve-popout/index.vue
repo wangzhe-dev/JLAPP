@@ -7,7 +7,7 @@
 		<view class="approval-popout">
 			<!-- 采用 CForm 承载结构化信息，便于后续扩展字段 -->
 			<CForm
-				ref="cFormRef"
+				ref="formRef"
 				v-model="formModel"
 				:schema="schemaRef"
 				v-if="visible"
@@ -20,7 +20,7 @@
 							:key="record.id || record.repairId || index"
 							variant="outline"
 							:title="record.equipmentName"
-							:extra="formatRecordTime(record.createdTime)"
+							:extra="formatDateTime(record.createdTime)"
 							:lines="resolveRepairLines(record)"
 						/>
 					</div>
@@ -41,8 +41,10 @@ import type {
 } from "@/components/c-form/types";
 
 import CCard from "@/components/c-card/CCard.vue";
-import { ensurePicturePreviewUrl } from "@/utils/picture";
+import { ensurePicturePreviewUrl, normalizePictureList } from "@/utils/picture";
 import { getRepairMessage } from "@/api/order";
+import { formatDateTime } from "@/utils/date";
+import { toArray } from "@/utils/array";
 
 type ApproveOption = {
 	label: string;
@@ -75,7 +77,7 @@ const props = withDefaults(
 	}
 );
 
-const cFormRef = ref<CFormExpose | null>(null);
+const formRef = ref<CFormExpose | null>(null);
 const repairRecords = ref<any[]>([]);
 
 const recordsLoading = ref(false);
@@ -86,7 +88,6 @@ const visible = computed({
 	get: () => !!props.visible,
 	set: (value) => emit("update:visible", value),
 });
-const formRef = ref<CFormExpose | null>(null);
 const formModel = ref<TextareaPopoutForm>({
 	auditingSuggest: "",
 	approvalResult: "5",
@@ -209,23 +210,6 @@ async function loadRepairRecords(id: string) {
 	}
 }
 
-function toArray(input: any): any[] {
-	if (!input) return [];
-	return Array.isArray(input) ? input : [input];
-}
-
-function formatRecordTime(value: any) {
-	if (!value && value !== 0) return "-";
-	const date = new Date(value);
-	if (Number.isNaN(date.getTime())) return String(value ?? "-");
-	const pad = (num: number) => (num < 10 ? `0${num}` : `${num}`);
-	return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
-		date.getDate()
-	)} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(
-		date.getSeconds()
-	)}`;
-}
-
 function resolveRepairLines(record: any) {
 	const primaryLineCount = 3;
 	const lines: any[] = [];
@@ -245,8 +229,8 @@ function resolveRepairLines(record: any) {
 	});
 
 	addLine("维修过程", record?.repairProcess ?? "-");
-	addLine("开始时间", formatRecordTime(record?.repairStartTime));
-	addLine("结束时间", formatRecordTime(record?.repairEndTime));
+	addLine("开始时间", formatDateTime(record?.repairStartTime));
+	addLine("结束时间", formatDateTime(record?.repairEndTime));
 	addLine("维修净时(min)", record?.maintenanceTime ?? "-");
 	addLine("维修结果", record?.repairReason ?? record?.repairResult ?? "-");
 	addLine("原因或建议", record?.reason ?? record?.suggestion ?? "-");
@@ -298,20 +282,6 @@ function formatChangeParts(record: any) {
 	return parts.join("；");
 }
 
-function normalizePictureList(raw: any) {
-	if (!raw) return [];
-	if (Array.isArray(raw)) {
-		return raw.map((item) => ensurePicturePreviewUrl(item)).filter(Boolean);
-	}
-	if (typeof raw === "string") {
-		return raw
-			.split(/[;,]/)
-			.map((item) => ensurePicturePreviewUrl(item.trim()))
-			.filter(Boolean);
-	}
-	return [ensurePicturePreviewUrl(raw)].filter(Boolean);
-}
-
 function unwrapRecordList(raw: any): any[] {
 	if (!raw) return [];
 	if (Array.isArray(raw)) return raw;
@@ -339,7 +309,7 @@ async function handleBeforeClose(type: "confirm" | "cancel" | "close") {
 	const form = formRef.value;
 	if (form?.validate) {
 		const ok = await form.validate();
-		if (!ok) return Promise.reject(false);
+		if (!ok) return false;
 	}
 	if (typeof props.beforeClose === "function") {
 		const approvalResult =
@@ -349,7 +319,6 @@ async function handleBeforeClose(type: "confirm" | "cancel" | "close") {
 			equipmentRepairauditing: {
 				orderStatus: approvalResult,
 				approvalResult,
-				auditingReport: formModel.value.auditingReport,
 				auditingSuggest: formModel.value.auditingSuggest,
 			},
 		};
@@ -368,8 +337,6 @@ async function handleBeforeClose(type: "confirm" | "cancel" | "close") {
 	gap: 16px;
 	padding: 16px 20px 24px 20px !important;
 	box-sizing: border-box;
-	max-height: 70vh;
-	overflow-y: auto;
 }
 
 .approval-popout__form {

@@ -70,13 +70,12 @@ import type { CFormSchema, CFormSchemaField } from "@/components/c-form/types";
 import CCard from "@/components/c-card/CCard.vue";
 import { orderListDetail, getRepairMessage } from "@/api/order";
 import { queryDictList } from "@/api/dict";
-import { ensurePicturePreviewUrl } from "@/utils/picture";
+import { ensurePicturePreviewUrl, normalizePictureList } from "@/utils/picture";
 import { resolveStatusState } from "@/utils/status";
 import { http } from "@/utils/request";
-function toArray<T>(input: T | T[] | null | undefined): T[] {
-	if (!input) return [];
-	return Array.isArray(input) ? input : [input];
-}
+import { formatDateTime } from "@/utils/date";
+import { pad } from "@/utils/format";
+import { toArray } from "@/utils/array";
 
 const form = ref<Record<string, any>>({
 	orderCode: "",
@@ -255,34 +254,11 @@ const schemaRef = computed<CFormSchema>(() => {
 	};
 });
 
-function formatDateTime(value: any) {
-	if (!value && value !== 0) return "-";
-	const date = new Date(value);
-	if (Number.isNaN(date.getTime())) return String(value ?? "-");
-	const pad = (num: number) => (num < 10 ? `0${num}` : `${num}`);
-	return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
-		date.getDate()
-	)} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
 
 function formatRecordTime(value: any) {
 	if (!value) return "-";
 	const formatted = formatDateTime(value);
 	return formatted === "-" ? String(value ?? "-") : formatted;
-}
-
-function normalizePictureList(raw: any) {
-	if (!raw) return [];
-	if (Array.isArray(raw)) {
-		return raw.map((item) => ensurePicturePreviewUrl(item)).filter(Boolean);
-	}
-	if (typeof raw === "string") {
-		return raw
-			.split(/[;,]/)
-			.map((item) => ensurePicturePreviewUrl(item.trim()))
-			.filter(Boolean);
-	}
-	return [ensurePicturePreviewUrl(raw)].filter(Boolean);
 }
 
 function ensureParams(options: Record<string, any>) {

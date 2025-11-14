@@ -94,3 +94,120 @@ export function stripPictureBaseUrl(raw: any): string {
   }
   return trimmed
 }
+
+/**
+ * 规范化图片列表数据
+ *
+ * 处理多种输入格式：
+ * - 字符串（逗号或分号分隔）: "url1,url2;url3"
+ * - 数组: [url1, url2] 或 [{url: ...}, {src: ...}]
+ * - null/undefined
+ *
+ * @param raw - 原始图片数据
+ * @returns 标准化的图片对象数组
+ *
+ * @example
+ * normalizePictureList("img1.jpg,img2.jpg")
+ * // [{id:"0",src:"https://...img1.jpg"}, {id:"1",src:"https://...img2.jpg"}]
+ *
+ * normalizePictureList([{url:"img1.jpg"}, "img2.jpg"])
+ * // [{id:"0",src:"https://...img1.jpg"}, {id:"1",src:"https://...img2.jpg"}]
+ */
+export function normalizePictureList(raw: any): Array<{ id: string; src: string }> {
+  if (!raw) return []
+
+  // 转换为数组
+  let items: any[] = []
+  if (Array.isArray(raw)) {
+    items = raw
+  } else if (typeof raw === 'string') {
+    // 字符串：按逗号或分号分割
+    items = String(raw)
+      .replace(/,$/, '') // 移除末尾逗号
+      .split(/[,;]/)
+      .map(s => s.trim())
+      .filter(Boolean)
+  } else if (typeof raw === 'object') {
+    // 单个对象，转换为数组
+    items = [raw]
+  } else {
+    return []
+  }
+
+  // 提取URL并规范化
+  const normalized = items
+    .flatMap((item: any) => {
+      if (!item) return []
+
+      // 如果是字符串，可能还需要进一步分割
+      if (typeof item === 'string') {
+        return item
+          .split(/[,;]/)
+          .map(s => s.trim())
+          .filter(Boolean)
+      }
+
+      // 如果是对象，提取URL字段
+      if (typeof item === 'object') {
+        const url = item.url || item.src || item.path || item.resultUrl || item.fileUrl || item.filepath || ''
+        return url ? [url] : []
+      }
+
+      return [item]
+    })
+    .map((item, index) => ({
+      id: `${index}`,
+      src: ensurePicturePreviewUrl(item),
+    }))
+    .filter(item => !!item.src) // 过滤掉空URL
+
+  return normalized
+}
+
+/**
+ * 将图片列表序列化为逗号分隔的字符串（用于提交）
+ *
+ * 从多种输入格式中提取URL并转换为后端期望的逗号分隔字符串
+ *
+ * @param input - 图片数据（数组或单个值）
+ * @returns 逗号分隔的URL字符串
+ *
+ * @example
+ * normalizeImagePathList([{url: "img1.jpg"}, "img2.jpg"])
+ * // "img1.jpg,img2.jpg"
+ *
+ * normalizeImagePathList("img1.jpg")
+ * // "img1.jpg"
+ *
+ * normalizeImagePathList(null)
+ * // ""
+ */
+export function normalizeImagePathList(input: any): string {
+  if (!input) return ''
+
+  const list = Array.isArray(input) ? input : [input]
+
+  const urls = list
+    .map((item: any) => {
+      if (!item) return ''
+      if (typeof item === 'string') return item.trim()
+
+      // 提取对象中的URL字段（按优先级）
+      return (
+        item.url ||
+        item.resultUrl ||
+        item.originUrl ||
+        item.path ||
+        item.tempFilePath ||
+        item.src ||
+        item.fileUrl ||
+        item.filepath ||
+        (item.response && (item.response.url || item.response.data)) ||
+        ''
+      )
+    })
+    .map((url: any) => (typeof url === 'string' ? url.trim() : ''))
+    .filter((url: string) => !!url)
+
+  return urls.join(',')
+}

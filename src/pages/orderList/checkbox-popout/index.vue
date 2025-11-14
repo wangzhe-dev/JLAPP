@@ -155,7 +155,7 @@ async function handleBeforeClose(type: "confirm" | "cancel" | "close") {
 	const form = formRef.value;
 	if (form?.validate) {
 		const ok = await form.validate();
-		if (!ok) return Promise.reject(false);
+		if (!ok) return false;
 	}
 	if (typeof props.beforeClose === "function") {
 		let news = JSON.parse(JSON.stringify(formModel.value));
@@ -187,8 +187,6 @@ function handleDispatchError(error: any) {
 	gap: 16px;
 	padding: 16px 20px 24px 20px;
 	box-sizing: border-box;
-	max-height: 40vh;
-	overflow-y: auto;
 }
 
 .escalate-popout__form {

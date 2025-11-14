@@ -38,7 +38,7 @@
 					class="exd-card"
 					:title="item.documentNumber || '-'"
 					:subtitle="item.sourceName || ''"
-					:extra="formatTime(item.createdTime)"
+					:extra="formatDateTime(item.createdTime)"
 					:variant="itemClosed(item) ? 'outline' : 'elevated'"
 					:lines="resolveCardLines(item)"
 					:line-clamp="6"
@@ -114,6 +114,7 @@ import DispatchPopout from "./components/DispatchPopout.vue";
 import CompletePopout from "./components/CompletePopout.vue";
 import EscalatePopout from "./components/EscalatePopout.vue";
 import { formatDate } from "sard-uniapp";
+import { formatDateTime } from "@/utils/date";
 
 import {
 	dispatchException,
@@ -124,6 +125,7 @@ import {
 } from "@/api/exception";
 import { EXCEPTION_LIST_REFRESH_KEY } from "@/pages/exceptionManagement/constants";
 import { ensurePicturePreviewUrl, stripPictureBaseUrl } from "@/utils/picture";
+import { toArray } from "@/utils/array";
 // Tabs 状态 & 映射
 const statusTabs = ref<Array<{ name: string; title: string }>>([]);
 const statusLabelMap = ref<Record<string, string>>({});
@@ -288,20 +290,10 @@ async function request(params: {
 	return { list: records, total };
 }
 
-function formatTime(
-	v?: string | number,
-	formatter = "YYYY-MM-DD HH:mm:ss"
-): string {
-	return v ? formatDate(new Date(v), formatter) : "-";
-}
 function itemClosed(item: any) {
 	// 约定：40/50 等为已处理/完成，根据需要调整
 	const code = Number(item?.documentStatus);
 	return [40, 50, 60, 70, 80, 90].includes(code);
-}
-function toArray<T>(input: T | T[] | null | undefined): T[] {
-	if (input === undefined || input === null) return [];
-	return Array.isArray(input) ? input : [input];
 }
 
 function resolveCardLines(item: any) {
@@ -333,7 +325,7 @@ function resolveCardLines(item: any) {
 	pushLine("呼叫人", item?.createdNameBy || "-");
 	pushLine(
 		"期望解决时间",
-		formatTime(item?.expectedResolutionTime, "YYYY-MM-DD")
+		formatDateTime(item?.expectedResolutionTime, { includeTime: false })
 	);
 
 	const pictureUrl = item?.exceptionPictureUrl;
@@ -459,7 +451,7 @@ async function handleRejectBeforeClose(
 		console.error("[exceptionDispose] reject failed", error);
 		const msg = error?.msg || error?.message || "操作失败";
 		uni.showToast({ title: msg, icon: "none" });
-		return Promise.reject(false);
+		return false;
 	} finally {
 		rejectSubmitting.value = false;
 	}
@@ -475,13 +467,29 @@ async function handleEscalateBeforeClose(payload?: {
 	noticeContent: string;
 	noticeType: string[];
 }) {
+	// 验证EDC编码
+	if (!payload?.handleEdcCode?.trim()) {
+		uni.showToast({ title: "EDC编码无效，请重新选择人员", icon: "none" });
+		return false;
+	}
+
+	// 验证通知方式
+	const noticeTypeStr = Array.isArray(payload.noticeType)
+		? payload.noticeType.filter(t => t?.trim()).join(",")
+		: "";
+
+	if (!noticeTypeStr) {
+		uni.showToast({ title: "请选择通知方式", icon: "none" });
+		return false;
+	}
+
 	escalateSubmitting.value = true;
 	uni.showLoading({ title: "提交中...", mask: true });
 
 	try {
 		await escalateException({
 			...payload,
-			noticeType: payload.noticeType.join(","),
+			noticeType: noticeTypeStr,
 		});
 		uni.showToast({ title: "已升级", icon: "success" });
 		escalatePopoutVisible.value = false;
@@ -492,7 +500,7 @@ async function handleEscalateBeforeClose(payload?: {
 		console.error("[exceptionDispose] escalate failed", error);
 		const msg = error?.msg || error?.message || error?.raw?.msg || "升级失败";
 		uni.showToast({ title: msg, icon: "none" });
-		return Promise.reject(false);
+		return false;
 	} finally {
 		escalateSubmitting.value = false;
 		uni.hideLoading();
@@ -698,13 +706,30 @@ async function handleTransferBeforeClose(payload?: {
 	handleP: string;
 	handlePName: string;
 	handleEdcCode: string;
+	noticeType: string[];
 }) {
+	// 验证EDC编码
+	if (!payload?.handleEdcCode?.trim()) {
+		uni.showToast({ title: "EDC编码无效，请重新选择人员", icon: "none" });
+		return false;
+	}
+
+	// 验证通知方式
+	const noticeTypeStr = Array.isArray(payload.noticeType)
+		? payload.noticeType.filter(t => t?.trim()).join(",")
+		: "";
+
+	if (!noticeTypeStr) {
+		uni.showToast({ title: "请选择通知方式", icon: "none" });
+		return false;
+	}
+
 	const id = payload?.id ? String(payload.id).trim() : "";
 	uni.showLoading({ title: "提交中...", mask: true });
 	try {
 		await reassignException({
 			...payload,
-			noticeType: payload.noticeType.join(","),
+			noticeType: noticeTypeStr,
 		});
 		uni.showToast({ title: "已转派", icon: "success" });
 		transferPopoutVisible.value = false;
@@ -715,7 +740,7 @@ async function handleTransferBeforeClose(payload?: {
 		console.error("[exceptionDispose] transfer failed", error);
 		const msg = error?.msg || "转派失败";
 		uni.showToast({ title: msg, icon: "none" });
-		return Promise.reject(false);
+		return false;
 	} finally {
 		uni.hideLoading();
 	}
@@ -743,7 +768,7 @@ async function handleDispatchBeforeClose(payload?: {
 	} catch (error: any) {
 		const msg = error?.msg || error?.message || error?.raw?.msg || "派工失败";
 		uni.showToast({ title: msg, icon: "none" });
-		return Promise.reject(false);
+		return false;
 	} finally {
 		dispatchSubmitting.value = false;
 		uni.hideLoading();
@@ -782,7 +807,7 @@ async function handleCompleteBeforeClose(payload?: {
 		console.error("[exceptionDispose] complete failed", error);
 		const msg = error?.msg || error?.message || error?.raw?.msg || "处理失败";
 		uni.showToast({ title: msg, icon: "none" });
-		return Promise.reject(false);
+		return false;
 	} finally {
 		completeSubmitting.value = false;
 		uni.hideLoading();

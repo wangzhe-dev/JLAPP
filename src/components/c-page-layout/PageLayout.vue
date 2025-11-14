@@ -74,6 +74,7 @@ import {
 	defineEmits,
 	computed,
 	onMounted,
+	onBeforeUnmount,
 	provide,
 	nextTick,
 } from "vue";
@@ -134,7 +135,7 @@ const props = withDefaults(
 		background: "#f6f8fa",
 		padding: "0",
 		withTabbar: false,
-		tabbarReserve: "88px",
+		tabbarReserve: "70px",
 		backText: "",
 		autoNavigateBack: true,
 	},
@@ -271,7 +272,7 @@ const onBack = () => {
 	emit("back");
 	uni.navigateBack({ delta: 1 });
 };
-onMounted(() => {
+function updateSafeArea() {
 	try {
 		const info = uni.getSystemInfoSync();
 		const toNumber = (val: unknown): number => {
@@ -310,7 +311,25 @@ onMounted(() => {
 
 		safeAreaTop.value = top;
 		safeAreaBottom.value = bottom;
-	} catch {}
+	} catch (error) {
+		console.warn('[PageLayout] updateSafeArea error:', error);
+	}
+}
+
+onMounted(() => {
+	updateSafeArea();
+
+	// Listen for window resize events (including orientation changes)
+	uni.onWindowResize(() => {
+		updateSafeArea();
+	});
+});
+
+onBeforeUnmount(() => {
+	// Clean up window resize listener
+	uni.offWindowResize(() => {
+		updateSafeArea();
+	});
 });
 
 provide(PAGE_LAYOUT_CONTENT_REF, contentRef);

@@ -1,7 +1,7 @@
 <template>
 	<PageLayout title="设备报修" :show-back="true" :safe-bottom="true">
 		<CForm
-			ref="cFormRef"
+			ref="formRef"
 			v-model="formData"
 			:schema="schema"
 			@submit="handleSubmit"
@@ -14,24 +14,14 @@
 import { ref, onMounted, nextTick } from "vue";
 import { onLoad } from "@dcloudio/uni-app";
 import { CForm } from "@/components/c-form";
+import type { CFormExpose } from "@/components/c-form/types";
 import PageLayout from "@/components/c-page-layout/PageLayout.vue";
 import { repairFormSchema } from "./formSchema";
 import { http } from "@/utils/request";
 import { equipmentRepaircommit } from "@/api/order";
+import { formatDateTime } from "@/utils/date";
+import { normalizeImagePathList } from "@/utils/picture";
 
-function formatDateTime(value: any) {
-	if (!value && value !== 0) return "";
-	if (typeof value === "string" && /\d{4}-\d{2}-\d{2}/.test(value))
-		return value;
-	const date = new Date(value);
-	if (isNaN(date.getTime())) return String(value ?? "");
-	const pad = (num: number) => (num < 10 ? `0${num}` : `${num}`);
-	return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(
-		date.getDate()
-	)} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(
-		date.getSeconds()
-	)}`;
-}
 
 const formData = ref<Record<string, any>>({
 	checkNo: "",
@@ -46,7 +36,7 @@ const formData = ref<Record<string, any>>({
 	imagePath: [],
 });
 
-const cFormRef = ref<any>();
+const formRef = ref<CFormExpose | null>(null);
 
 const schema = repairFormSchema;
 
@@ -56,28 +46,8 @@ const EQUIPMENT_INFO_API = "/equipment/equipmentInfo/queryEquipmentCode";
 // 简单的请求序号用于避免并发查询时旧结果覆盖新结果
 let equipmentCodeRequestId = 0;
 
-function normalizeImagePathList(input: any): string {
-	if (!input) return "";
-	const list = Array.isArray(input) ? input : [input];
-	const normalized = list
-		.map((item: any) => {
-			if (!item) return "";
-			if (typeof item === "string") return item.trim();
-			return (
-				item.url ||
-				item.resultUrl ||
-				item.originUrl ||
-				(item.response && (item.response.url || item.response.data)) ||
-				""
-			);
-		})
-		.map((url: any) => (typeof url === "string" ? url.trim() : ""))
-		.filter((url: string) => !!url);
-	return normalized.join(",");
-}
-
 async function handleSubmit(data: Record<string, any>) {
-	const valid = await cFormRef.value?.validate?.();
+	const valid = await formRef.value?.validate?.();
 	if (!valid) return;
 	const payload = {
 		...data,
@@ -143,13 +113,13 @@ async function updateEquipmentInfoByCode(rawCode: any) {
 function applyEquipmentName(name: string) {
 	const finalName = name || "";
 	formData.value.equipmentName = finalName;
-	cFormRef.value?.setValue?.("equipmentName", finalName);
+	formRef.value?.setValue?.("equipmentName", finalName);
 }
 
 function applyFactoryName(name: string) {
 	const finalName = name || "";
 	formData.value.factoryName = finalName;
-	cFormRef.value?.setValue?.("factoryName", finalName);
+	formRef.value?.setValue?.("factoryName", finalName);
 }
 
 function queryEquipmentCode(params: { equipmentCode: string }) {
@@ -183,7 +153,7 @@ onLoad((options: Record<string, any>) => {
 	if (eqCode) {
 		formData.value.equipmentCode = eqCode;
 		nextTick(() => {
-			cFormRef.value?.setValue?.("equipmentCode", eqCode);
+			formRef.value?.setValue?.("equipmentCode", eqCode);
 		});
 	}
 	if (eqName) {
