@@ -1,10 +1,8 @@
-// ===== 精简全局主题定义（移除 theme.scss 统一方案） =====
-// 主色 / 渐变 / 阴影按需扩展
+// ===== 全局主题定义 =====
 $main-color: #0b3d91;
-
 $linear-color: linear-gradient(135deg, #0b3d91, #1565c0);
 
-// 通用主按钮（保持与先前视觉一致）
+// 通用主按钮
 .primary-btn {
 	background: $linear-color;
 	color: #fff;
@@ -16,20 +14,27 @@ $linear-color: linear-gradient(135deg, #0b3d91, #1565c0);
 		opacity: 0.6;
 	}
 }
+
 .finished {
 	text-align: center;
 	padding: 40rpx 0;
 	color: #999;
 	font-size: 26rpx;
 }
+
 .finished-block {
 	text-align: center;
 	padding: 40rpx 0;
 	color: #999;
 	font-size: 26rpx;
 }
-// ===== 自定义底部导航覆盖 =====
+
+// ===== 导入其他样式 =====
+// 自定义底部导航
 @import "@/styles/_tabbar.scss";
+
+// 跨平台适配样式
+@import "@/styles/platform.scss";
 
 // ===== Sard Upload 默认示例样式（对齐官方演示） =====
 page,

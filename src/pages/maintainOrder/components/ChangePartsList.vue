@@ -96,30 +96,44 @@ async function onRemove(item: any, hide?: () => void) {
 }
 
 .change-parts__empty {
-	padding: 12px;
-	font-size: 13px;
+	padding: 32rpx;
+	font-size: 28rpx;
 	color: #9ca3af;
 	background: #f9fafb;
-	border-radius: 10px;
+	border-radius: 16rpx;
+	text-align: center;
 }
 
 .change-parts__item {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
-	padding: 10px 12px;
-	border-radius: 10px;
-	background: #f9fafb;
+	padding: 24rpx 32rpx;
+	border-radius: 16rpx;
+	background: linear-gradient(135deg, #f9fafb 0%, #ffffff 100%);
+	border: 1rpx solid #e5e7eb;
+	transition: all 0.3s ease;
 }
 
 .change-parts__name {
-	font-size: 14px;
+	font-size: 30rpx;
 	font-weight: 600;
 	color: #1f2937;
+	flex: 1;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
 }
 
 .change-parts__qty {
-	font-size: 12px;
-	color: #6b7280;
+	font-size: 28rpx;
+	font-weight: 500;
+	color: #10b981;
+	background: rgba(16, 185, 129, 0.1);
+	padding: 8rpx 16rpx;
+	border-radius: 8rpx;
+	margin-left: 16rpx;
+	flex-shrink: 0;
 }
 </style>

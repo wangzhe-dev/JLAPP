@@ -375,13 +375,17 @@ async function handleBeforeClose(type: "confirm" | "cancel" | "close") {
 .approval-popout__form {
 	:deep(.c-form-wrapper) {
 		/* Popout 中不需要占满视口高度，避免内容被推到底部 */
-		min-height: auto;
-		background: transparent;
-		padding-bottom: 0;
+		min-height: auto !important;
+		background: transparent !important;
+		padding-bottom: 0 !important;
 	}
 
 	:deep(.c-form) {
-		padding: 0;
+		padding: 0 !important;
+	}
+
+	:deep(.sar-form) {
+		padding: 0 !important;
 	}
 
 	:deep(.c-form-group-title) {

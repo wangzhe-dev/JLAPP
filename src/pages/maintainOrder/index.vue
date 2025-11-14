@@ -78,12 +78,6 @@
 				</CForm>
 			</view>
 		</view>
-		<SparePartSelector
-			v-model:visible="sparePartVisible"
-			:model-value="form.repairFormData?.changeParts || []"
-			:fetcher="fetchSpareOptions"
-			@confirm="onSparePartConfirm"
-		/>
 	</PageLayout>
 </template>
 
@@ -108,7 +102,6 @@ import {
 	equipmentRepairAdd,
 	getRepairMessage,
 } from "@/api/order";
-import SparePartSelector from "./components/SparePartSelector.vue";
 import ChangePartsList from "./components/ChangePartsList.vue";
 import CCard from "@/components/c-card/CCard.vue";
 import { queryDictList } from "@/api/dict";
@@ -485,8 +478,6 @@ const schemaRef = computed<CFormSchema>(() => ({
 	showActions: true,
 	fields: buildFields(),
 }));
-
-const sparePartVisible = ref<boolean>(false);
 
 function buildFields(): CFormSchemaField[] {
 	const detailFields: CFormSchemaField[] = [
@@ -905,7 +896,21 @@ watch(
 );
 
 function openSparePartPop() {
-	sparePartVisible.value = true;
+	// 跳转到备件选择页面
+	uni.navigateTo({
+		url: "/pages/sparePartPicker/index",
+		events: {
+			// 监听备件选择返回
+			selectSpares: (data: any) => {
+				console.log("[MaintainOrder] 接收到选择的备件:", data);
+				onSparePartConfirm(data);
+			},
+		},
+		success: (res) => {
+			// 通过 eventChannel 传递初始数据
+			res.eventChannel.emit("initialData", form.value.repairFormData?.changeParts || []);
+		},
+	});
 }
 
 function normalizeSparePart(item: any) {
@@ -930,8 +935,7 @@ function onSparePartConfirm(payloadList: any) {
 		return true;
 	}
 
-	let repairForm = ensureRepairForm();
-	let currentList = [];
+	const currentList = [];
 	payloadList.forEach((payload) => {
 		if (!payload || !payload.spareId) return;
 		currentList.push({
@@ -941,8 +945,16 @@ function onSparePartConfirm(payloadList: any) {
 			spareNum: payload.spareNum,
 		});
 	});
+
+	// 直接更新 form.value.repairFormData.changeParts 以确保响应式更新
+	const repairForm = ensureRepairForm();
 	repairForm.changeParts = currentList;
+
+	// 强制触发响应式更新
+	form.value = { ...form.value };
+
 	console.log("[MaintainOrder] 备件已添加:", repairForm.changeParts);
+	console.log("[MaintainOrder] 当前表单数据:", form.value.repairFormData?.changeParts);
 	return true;
 }
 
@@ -959,6 +971,10 @@ function removeSparePart(part: { spareId?: string }) {
 	if (nextList.length === prevList.length) return;
 	repairForm.changeParts = nextList;
 	updateRepairFormField("changeParts", nextList);
+
+	// 强制触发响应式更新
+	form.value = { ...form.value };
+	console.log("[MaintainOrder] 备件已移除，剩余:", repairForm.changeParts);
 }
 
 function previewImage(index: number) {
